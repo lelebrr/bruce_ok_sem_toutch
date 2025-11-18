@@ -1,0 +1,107 @@
+#include <Arduino.h>
+#include <TFT_eSPI.h>
+
+// TFT_eSPI setup
+TFT_eSPI tft = TFT_eSPI();
+
+// Touch screen setup
+#define TOUCH_CS 33
+#define TOUCH_IRQ 36
+
+// Screen dimensions
+#define SCREEN_WIDTH 480
+#define SCREEN_HEIGHT 320
+
+// Touch point structure
+struct TouchPoint {
+    int x;
+    int y;
+    bool pressed;
+};
+
+// Global variables
+TouchPoint touchPoint;
+bool touchInitialized = false;
+
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+
+    Serial.println("Initializing TFT and touch...");
+
+    // Initialize TFT
+    tft.init();
+    tft.setRotation(1);
+    tft.fillScreen(TFT_BLACK);
+    tft.setCursor(0, 0);
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(2);
+    tft.println("Touch Screen Test");
+    tft.setTextSize(1);
+
+    // Initialize touch
+    pinMode(TOUCH_CS, OUTPUT);
+    digitalWrite(TOUCH_CS, LOW);
+
+    touchInitialized = true;
+    Serial.println("Touch screen initialized");
+
+    // Test touch
+    Serial.println("Testing touch...");
+    uint16_t touchX, touchY;
+    if (tft.getTouch(&touchX, &touchY)) {
+        Serial.print("Touch detected: X=");
+        Serial.print(touchX);
+        Serial.print(", Y=");
+        Serial.println(touchY);
+    } else {
+        Serial.println("No touch detected");
+    }
+}
+
+void loop() {
+    if (!touchInitialized) {
+        delay(100);
+        return;
+    }
+
+    // Check for touch input
+    uint16_t rawX, rawY;
+    bool touchDetected = tft.getTouchRaw(&rawX, &rawY);
+
+    if (touchDetected) {
+        // Map raw coordinates to screen coordinates
+        uint16_t touchX = map(rawX, 0, 4095, 0, SCREEN_WIDTH);
+        uint16_t touchY = map(rawY, 0, 4095, 0, SCREEN_HEIGHT);
+
+        // Update touch point
+        touchPoint.x = touchX;
+        touchPoint.y = touchY;
+        touchPoint.pressed = true;
+
+        // Debug output
+        Serial.print("Touch detected: Raw=");
+        Serial.print(rawX);
+        Serial.print(",");
+        Serial.print(rawY);
+        Serial.print(" -> Screen=");
+        Serial.print(touchX);
+        Serial.print(",");
+        Serial.println(touchY);
+
+        // Draw touch point on screen
+        tft.fillCircle(touchX, touchY, 5, TFT_RED);
+
+        // Check if touch is in button area (bottom of screen)
+        if (touchY > SCREEN_HEIGHT - 50) {
+            tft.fillRect(0, SCREEN_HEIGHT - 50, SCREEN_WIDTH, 50, TFT_BLUE);
+            tft.setCursor(SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT - 30);
+            tft.setTextColor(TFT_WHITE);
+            tft.println("Button Pressed!");
+        }
+    } else {
+        touchPoint.pressed = false;
+    }
+
+    delay(50);
+}

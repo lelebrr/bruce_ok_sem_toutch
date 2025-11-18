@@ -1,0 +1,177 @@
+#include "BleMenu.h"
+#include "core/display.h"
+#include "core/display_functions.h"
+#include "core/utils.h"
+#include "modules/badusb_ble/ducky_typer.h"
+#include "modules/ble/ble_common.h"
+#include "modules/ble/ble_ninebot.h"
+#include "modules/ble/ble_spam.h"
+#include <globals.h>
+
+void BleMenu::optionsMenu() {
+    options.clear();
+    if (BLEConnected) {
+        options.emplace_back("Disconnect", [=]() {
+            BLEDevice::deinit();
+            BLEConnected = false;
+            delete hid_ble;
+            hid_ble = nullptr;
+            if (_Ask_for_restart == 1) _Ask_for_restart = 2; // Sets the variable to ask for restart;
+        });
+    }
+
+    options.emplace_back("Media Cmds", [=]() { MediaCommands(hid_ble, true); });
+#if !defined(LITE_VERSION)
+    options.emplace_back("BLE Scan", ble_scan);
+    options.emplace_back("iBeacon", [=]() { ibeacon(); });
+    options.emplace_back("Bad BLE", [=]() { ducky_setup(hid_ble, true); });
+#endif
+    options.emplace_back("BLE Keyboard", [=]() { ducky_keyboard(hid_ble, true); });
+    options.emplace_back("Applejuice", lambdaHelper(aj_adv, 0));
+    options.emplace_back("SourApple", lambdaHelper(aj_adv, 1));
+    options.emplace_back("Windows Spam", lambdaHelper(aj_adv, 2));
+    options.emplace_back("Samsung Spam", lambdaHelper(aj_adv, 3));
+    options.emplace_back("Android Spam", lambdaHelper(aj_adv, 4));
+    options.emplace_back("Spam All", lambdaHelper(aj_adv, 5));
+    options.emplace_back("Spam Custom", lambdaHelper(aj_adv, 6));
+    options.emplace_back("Ninebot", [=]() { BLENinebot(); });
+    addOptionToMainMenu();
+
+    loopOptions(options, MENU_TYPE_SUBMENU, "Bluetooth");
+}
+void BleMenu::drawIconImg() {
+    if (bruceConfig.theme.fs) {
+        drawImg((fs::FS &)SD, bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ble), 0, imgCenterY, true);
+    } else {
+        drawImg(LittleFS, bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ble), 0, imgCenterY, true);
+    }
+}
+
+void BleMenu::drawIcon(float scale) {
+    clearIconArea();
+
+    int lineWidth = scale * 5;
+    int iconW = scale * 36;
+    int iconH = scale * 60;
+    int radius = scale * 5;
+    int deltaRadius = scale * 10;
+
+    if (iconW % 2 != 0) iconW++;
+    if (iconH % 4 != 0) iconH += 4 - (iconH % 4);
+
+    tft.drawWideLine(
+        iconCenterX,
+        iconCenterY + iconH / 4,
+        iconCenterX - iconW,
+        iconCenterY - iconH / 4,
+        lineWidth,
+        bruceConfig.priColor,
+        bruceConfig.priColor
+    );
+    tft.drawWideLine(
+        iconCenterX,
+        iconCenterY - iconH / 4,
+        iconCenterX - iconW,
+        iconCenterY + iconH / 4,
+        lineWidth,
+        bruceConfig.priColor,
+        bruceConfig.priColor
+    );
+    tft.drawWideLine(
+        iconCenterX,
+        iconCenterY + iconH / 4,
+        iconCenterX - iconW / 2,
+        iconCenterY + iconH / 2,
+        lineWidth,
+        bruceConfig.priColor,
+        bruceConfig.priColor
+    );
+    tft.drawWideLine(
+        iconCenterX,
+        iconCenterY - iconH / 4,
+        iconCenterX - iconW / 2,
+        iconCenterY - iconH / 2,
+        lineWidth,
+        bruceConfig.priColor,
+        bruceConfig.priColor
+    );
+
+    tft.drawWideLine(
+        iconCenterX - iconW / 2,
+        iconCenterY - iconH / 2,
+        iconCenterX - iconW / 2,
+        iconCenterY + iconH / 2,
+        lineWidth,
+        bruceConfig.priColor,
+        bruceConfig.priColor
+    );
+
+    // tft.fillTriangle(
+    //     iconCenterX + lineWidth / 2,
+    //     iconCenterY - iconH / 4,
+    //     iconCenterX - iconW / 2,
+    //     iconCenterY + lineWidth / 2,
+    //     iconCenterX - iconW / 2,
+    //     iconCenterY - iconH / 2 - lineWidth / 2,
+    //     bruceConfig.priColor
+    // );
+    // tft.fillTriangle(
+    //     iconCenterX + lineWidth / 2,
+    //     iconCenterY + iconH / 4,
+    //     iconCenterX - iconW / 2,
+    //     iconCenterY - lineWidth / 2,
+    //     iconCenterX - iconW / 2,
+    //     iconCenterY + iconH / 2 + lineWidth / 2,
+    //     bruceConfig.priColor
+    // );
+
+    // tft.fillTriangle(
+    //     iconCenterX - lineWidth / 2,
+    //     iconCenterY - iconH / 4,
+    //     iconCenterX - iconW / 2 + lineWidth / 2,
+    //     iconCenterY - lineWidth,
+    //     iconCenterX - iconW / 2 + lineWidth / 2,
+    //     iconCenterY - iconH / 2 + lineWidth,
+    //     bruceConfig.bgColor
+    // );
+    // tft.fillTriangle(
+    //     iconCenterX - lineWidth / 2,
+    //     iconCenterY + iconH / 4,
+    //     iconCenterX - iconW / 2 + lineWidth / 2,
+    //     iconCenterY + lineWidth,
+    //     iconCenterX - iconW / 2 + lineWidth / 2,
+    //     iconCenterY + iconH / 2 - lineWidth,
+    //     bruceConfig.bgColor
+    // );
+
+    tft.drawArc(
+        iconCenterX,
+        iconCenterY,
+        2.5 * radius,
+        2 * radius,
+        210,
+        330,
+        bruceConfig.priColor,
+        bruceConfig.bgColor
+    );
+    tft.drawArc(
+        iconCenterX,
+        iconCenterY,
+        2.5 * radius + deltaRadius,
+        2 * radius + deltaRadius,
+        210,
+        330,
+        bruceConfig.priColor,
+        bruceConfig.bgColor
+    );
+    tft.drawArc(
+        iconCenterX,
+        iconCenterY,
+        2.5 * radius + 2 * deltaRadius,
+        2 * radius + 2 * deltaRadius,
+        210,
+        330,
+        bruceConfig.priColor,
+        bruceConfig.bgColor
+    );
+}

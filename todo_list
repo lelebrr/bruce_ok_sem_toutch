@@ -1,0 +1,6 @@
+- [x] Adicionar caminhos de include do framework Arduino ao c_cpp_properties.json
+- [x] Verificar constantes não declaradas e erros de tipos nos arquivos de menu
+- [x] Corrigir erros de função não encontrada em ConfigMenu.cpp, IRMenu.cpp, GpsMenu.cpp
+- [x] Corrigir warnings de conversão de string para char* em BleMenu.cpp
+- [x] Verificar se o projeto compila após correções
+- [x] Corrigir novos erros em powerSave.cpp, scrollableTextArea.cpp, sd_functions.cpp etc.
