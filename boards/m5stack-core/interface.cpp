@@ -1,6 +1,7 @@
 #include "core/powerSave.h"
 #include <M5Unified.h>
 #include <interface.h>
+#include "input_state.h"
 
 /***************************************************************************************
 ** Function name: _setup_gpio()
@@ -37,9 +38,10 @@ void _setBrightness(uint8_t brightval) {
 ** Handles the variables PrevPress, NextPress, check(SelPress), AnyKeyPress and EscPress
 **********************************************************************/
 void InputHandler(void) {
+    auto& navState = InputManager::getInstance().state;
     M5.update();
     static unsigned long tm = 0;
-    if (millis() - tm < 200 && !LongPress) return;
+    if (millis() - tm < 200 && navState.last_action != KeyAction::LongPress) return;
 
     bool aPressed = (M5.BtnA.isPressed());
     bool bPressed = (M5.BtnB.isPressed());
@@ -49,11 +51,16 @@ void InputHandler(void) {
     if (anyPressed) tm = millis();
     if (anyPressed && wakeUpScreen()) return;
 
-    AnyKeyPress = anyPressed;
-    PrevPress = aPressed;
-    EscPress = aPressed;
-    NextPress = cPressed;
-    SelPress = bPressed;
+    navState.any_key_pressed = anyPressed;
+    if (aPressed) {
+        navState.last_action = KeyAction::Prev;
+    }
+    if (cPressed) {
+        navState.last_action = KeyAction::Next;
+    }
+    if (bPressed) {
+        navState.last_action = KeyAction::Select;
+    }
 }
 
 /*********************************************************************

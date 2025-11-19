@@ -137,7 +137,7 @@ public:
     void fromFile(bool checkFS = true);
     void factoryReset();
     void validateConfig();
-    JsonDocument toJson() const;
+    DynamicJsonDocument toJson() const;
 
     // UI Color
     void setUiColor(uint16_t primary, uint16_t *secondary = nullptr, uint16_t *background = nullptr);

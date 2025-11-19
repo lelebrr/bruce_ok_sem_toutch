@@ -3,7 +3,7 @@
 #include "core/wifi/wifi_common.h" //to return MAC addr
 #include <globals.h>
 
-uint32_t wifiCallback(cmd *c) {
+void wifiCallback(cmd *c) {
     Command cmd(c);
     Argument statusArg = cmd.getArgument("status");
     String status = statusArg.getValue();
@@ -19,19 +19,17 @@ uint32_t wifiCallback(cmd *c) {
 
     if (status == "off") {
         wifiDisconnect();
-        return true;
     } else if (status == "on") {
         if (wifiConnected) {
             Serial.println("Wifi already connected");
-            return true;
+            return;
         }
-        if (wifiConnecttoKnownNet()) return true;
+        if (wifiConnecttoKnownNet()) return;
         wifiDisconnect();
         _setupAP();
 
     } else if (status == "add" && ssid != "" && pwd != "") {
         bruceConfig.addWifiCredential(ssid, pwd);
-        return true;
     } else {
         Serial.println(
             "Invalid status: " + status +
@@ -41,11 +39,10 @@ uint32_t wifiCallback(cmd *c) {
             "-> wifi on  (Connects to a known Wifi network. if there's no known network, starts in AP Mode)\n"
             "-> wifi add SSID Password (adds a network to the list)"
         );
-        return false;
     }
 }
 
-uint32_t webuiCallback(cmd *c) {
+void webuiCallback(cmd *c) {
     Command cmd(c);
 
     Argument arg = cmd.getArgument("noAp");
@@ -54,8 +51,6 @@ uint32_t webuiCallback(cmd *c) {
     Serial.println("Starting Web UI " + !noAp ? "AP" : "STA");
     Serial.println("Press ESC to quit");
     startWebUi(!noAp); // MEMO: will quit when check(EscPress)
-
-    return true;
 }
 
 void createWifiCommands(SimpleCLI *cli) {

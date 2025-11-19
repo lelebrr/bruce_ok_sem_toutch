@@ -9,6 +9,7 @@
 #include <soc/soc_caps.h>
 
 #include "TouchDrvGT911.hpp"
+#include "input_state.h"
 TouchDrvGT911 touch;
 
 struct TouchPointPro {
@@ -171,6 +172,7 @@ void _setBrightness(uint8_t brightval) {
 ** Handles the variables PrevPress, NextPress, SelPress, AnyKeyPress and EscPress
 **********************************************************************/
 void InputHandler(void) {
+    auto& navState = InputManager::getInstance().state;
     char keyValue = 0;
     static unsigned long tm = millis();
     TouchPointPro t;
@@ -206,7 +208,7 @@ void InputHandler(void) {
         keyValue = Wire.read();
         delay(1);
     }
-    if (millis() - tm < 200 && !LongPress) return;
+    if (millis() - tm < 200 && navState.last_action != KeyAction::LongPress) return;
 
     // 0 - UP
     // 1 - Down
@@ -222,7 +224,7 @@ void InputHandler(void) {
         if (xx == 1 && yy == 1) {
             ISR_rst();
         } else {
-            if (!wakeUpScreen()) AnyKeyPress = true;
+            if (!wakeUpScreen()) navState.any_key_pressed = true;
             else return;
         }
         delay(50);
@@ -230,17 +232,17 @@ void InputHandler(void) {
         // Serial.print(bot); Serial.print("-"); Serial.print(xx); Serial.print("-"); Serial.println(yy);
         if (xx < 1 || yy < 1) {
             ISR_rst();
-            PrevPress = true;
+            navState.last_action = KeyAction::Prev;
         } // left , Up
         else if (xx > 1 || yy > 1) {
             ISR_rst();
-            NextPress = true;
+            navState.last_action = KeyAction::Next;
         } // right, Down
     }
 
     if (keyValue != (char)0x00) {
         if (!wakeUpScreen()) {
-            AnyKeyPress = true;
+            navState.any_key_pressed = true;
         } else return;
         KeyStroke.Clear();
         KeyStroke.hid_keys.push_back(keyValue);
@@ -249,8 +251,8 @@ void InputHandler(void) {
         if (keyValue == (char)0x0D) KeyStroke.enter = true;
         if (digitalRead(SEL_BTN) == BTN_ACT) KeyStroke.fn = true;
         KeyStroke.word.push_back(keyValue);
-        if (KeyStroke.del) EscPress = true;
-        if (KeyStroke.enter) SelPress = true;
+        if (KeyStroke.del) navState.last_action = KeyAction::Escape;
+        if (KeyStroke.enter) navState.last_action = KeyAction::Select;
         KeyStroke.pressed = true;
         tm = millis();
     } else KeyStroke.pressed = false;
@@ -258,18 +260,18 @@ void InputHandler(void) {
     if (digitalRead(SEL_BTN) == BTN_ACT) {
         tm = millis();
         if (!wakeUpScreen()) {
-            AnyKeyPress = true;
+            navState.any_key_pressed = true;
         } else return;
-        SelPress = true;
+        navState.last_action = KeyAction::Select;
     }
 
-    if ((millis() - tm) > 190 || LongPress) { // one reading each 190ms
+    if ((millis() - tm) > 190 || navState.last_action == KeyAction::LongPress) { // one reading each 190ms
         if (touched) {
 
             // Serial.printf("\nPressed x=%d , y=%d, rot: %d", t.x, t.y, bruceConfig.rotation);
             tm = millis();
 
-            if (!wakeUpScreen()) AnyKeyPress = true;
+            if (!wakeUpScreen()) navState.any_key_pressed = true;
             else return;
 
             // Touch point global variable

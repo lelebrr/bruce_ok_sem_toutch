@@ -101,7 +101,7 @@ void BruceConfigPins::toJson(JsonObject obj) const {
     gps_bus.toJson(_gps);
 }
 
-void BruceConfigPins::loadFile(JsonDocument &jsonDoc, bool checkFS) {
+void BruceConfigPins::loadFile(DynamicJsonDocument &jsonDoc, bool checkFS) {
     FS *fs;
     if (checkFS) {
         if (!getFsStorage(fs)) return;
@@ -129,14 +129,14 @@ void BruceConfigPins::loadFile(JsonDocument &jsonDoc, bool checkFS) {
 }
 
 void BruceConfigPins::fromFile(bool checkFS) {
-    JsonDocument jsonDoc;
+    DynamicJsonDocument jsonDoc(2048);
     loadFile(jsonDoc, checkFS);
 
     if (!jsonDoc.isNull()) fromJson(jsonDoc.as<JsonObject>());
 }
 
 void BruceConfigPins::createFile() {
-    JsonDocument jsonDoc;
+    DynamicJsonDocument jsonDoc(2048);
     toJson(jsonDoc.to<JsonObject>());
     serializeJsonPretty(jsonDoc, Serial);
 
@@ -159,7 +159,7 @@ void BruceConfigPins::createFile() {
 }
 
 void BruceConfigPins::saveFile() {
-    JsonDocument jsonDoc;
+    DynamicJsonDocument jsonDoc(2048);
     loadFile(jsonDoc);
 
     if (jsonDoc.isNull()) return createFile();

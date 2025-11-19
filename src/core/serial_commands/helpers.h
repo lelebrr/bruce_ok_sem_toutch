@@ -7,8 +7,8 @@
 #endif
 
 #include <Arduino.h>
-#include <LittleFS.h>
-extern FS &LittleFS;
+#include "LittleFS.h"
+extern fs::LittleFSFS LittleFS;
 FS &PSRamFS = LittleFS;
 // #include <PSRamFS.h>
 

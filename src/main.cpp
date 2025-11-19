@@ -9,6 +9,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include "input_state.h"
 io_expander ioExpander;
 BruceConfig bruceConfig;
 BruceConfigPins bruceConfigPins;
@@ -25,16 +26,6 @@ SPIClass CC_NRF_SPI(HSPI);
 #endif
 
 // Navigation Variables
-volatile bool NextPress = false;
-volatile bool PrevPress = false;
-volatile bool UpPress = false;
-volatile bool DownPress = false;
-volatile bool SelPress = false;
-volatile bool EscPress = false;
-volatile bool AnyKeyPress = false;
-volatile bool NextPagePress = false;
-volatile bool PrevPagePress = false;
-volatile bool LongPress = false;
 volatile bool SerialCmdPress = false;
 volatile int forceMenuOption = -1;
 volatile uint8_t menuOptionType = 0;
@@ -48,7 +39,17 @@ TouchPoint touchPoint;
 keyStroke KeyStroke;
 
 TaskHandle_t xHandle;
+/**
+ * @brief Handles user input from buttons and other sources.
+ *
+ * This task runs in the background and continuously checks for user input.
+ * It is responsible for setting the navigation variables that are used
+ * throughout the firmware.
+ *
+ * @param parameter A pointer to the task parameters (not used).
+ */
 void __attribute__((weak)) taskInputHandler(void *parameter) {
+    auto& navState = InputManager::getInstance().state;
     auto timer = millis();
     while (true) {
         checkPowerSaveTime();
@@ -56,17 +57,10 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
         // and navigation gets stuck, the idea here is run the input detection
         // if AnyKeyPress is false, or rerun if it was not renewed within 75ms (arbitrary)
         // because AnyKeyPress will be true if didn´t passed through a check(bool var)
-        if (!AnyKeyPress || millis() - timer > 75) {
-            NextPress = false;
-            PrevPress = false;
-            UpPress = false;
-            DownPress = false;
-            SelPress = false;
-            EscPress = false;
-            AnyKeyPress = false;
+        if (!navState.any_key_pressed || millis() - timer > 75) {
+            navState.last_action = KeyAction::None;
+            navState.any_key_pressed = false;
             SerialCmdPress = false;
-            NextPagePress = false;
-            PrevPagePress = false;
             touchPoint.pressed = false;
             touchPoint.Clear();
 #ifndef USE_TFT_eSPI_TOUCH
@@ -306,7 +300,8 @@ void boot_screen_anim() {
                 bruceConfig.priColor
             );
 #endif
-        if (check(AnyKeyPress)) // If any key or M5 key is pressed, it'll jump the boot screen
+        auto& navState = InputManager::getInstance().state;
+        if (check(navState.any_key_pressed)) // If any key or M5 key is pressed, it'll jump the boot screen
         {
             tft.fillScreen(bruceConfig.bgColor);
             delay(10);
@@ -371,6 +366,12 @@ void startup_sound() {
  **  Function: setup
  **  Where the devices are started and variables set
  *********************************************************************/
+/**
+ * @brief Initializes the firmware.
+ *
+ * This function is called once at startup and is responsible for
+ * initializing all the hardware and software components of the firmware.
+ */
 void setup() {
     // ESP-IDF initialization
     esp_err_t ret = nvs_flash_init();
@@ -470,6 +471,12 @@ void setup() {
  **  Main loop
  **********************************************************************/
 #if defined(HAS_SCREEN)
+/**
+ * @brief The main loop of the firmware.
+ *
+ * This function is called repeatedly after setup() has completed.
+ * It is responsible for running the main menu and the JavaScript interpreter.
+ */
 void loop() {
     // Interpreter must be ran in the loop() function, otherwise it breaks
     // called by 'stack canary watchpoint triggered (loopTask)'

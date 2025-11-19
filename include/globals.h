@@ -16,8 +16,8 @@
 #include <ArduinoJson.h>
 #include <ESP32Time.h>
 #include <FS.h>
-#include <LittleFS.h>
-extern FS &LittleFS; // <-- DECLARAÇÃO CORRETA PARA LITTLEFS NATIVO
+#include "LittleFS.h"
+extern fs::LittleFSFS LittleFS;
 #include <NTPClient.h>
 
 #include "core/config.h"
