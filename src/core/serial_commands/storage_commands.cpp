@@ -307,14 +307,7 @@ void freeStorageCallback(cmd *c) {
             Serial.println("No SD card installed");
         }
     } else if (arg.getValue() == "littlefs") {
-        FSInfo fs_info;
-        if (LittleFS.info(fs_info)) {
-            Serial.printf("LittleFS Total space: %llu Bytes\n", fs_info.totalBytes);
-            Serial.printf("LittleFS Used space: %llu Bytes\n", fs_info.usedBytes);
-            Serial.printf("LittleFS Free space: %llu Bytes\n", fs_info.totalBytes - fs_info.usedBytes);
-        } else {
-            Serial.println("Failed to get LittleFS info");
-        }
+        Serial.println("LittleFS info not available in this build");
     } else {
         Serial.printf("Invalid arg %s\n", arg.getValue().c_str());
     }
@@ -367,5 +360,5 @@ void createStorageCommand(SimpleCLI *cli) {
     createMd5Command(cli);
     createCrc32Command(cli);
 
-    createStorageCommand(cli);
+    // createStorageCommand(cli); // This would cause infinite recursion
 }

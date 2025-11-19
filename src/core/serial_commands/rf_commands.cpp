@@ -187,32 +187,32 @@ void rfSendCallback(cmd *c) {
 }
 
 void createRfRxCommand(Command *rfCmd) {
-    Command cmd = rfCmd->addCmd("rx", rfRxCallback);
-    cmd.addPosArg("frequency", String(bruceConfig.rfFreq).c_str());
-    cmd.addFlagArg("raw");
+    // Command cmd = rfCmd->addCmd("rx", rfRxCallback);
+    // cmd.addPosArg("frequency", String(bruceConfig.rfFreq).c_str());
+    // cmd.addFlagArg("raw");
 }
 
 void createRfTxCommand(Command *rfCmd) {
-    Command cmd = rfCmd->addCmd("tx", rfTxCallback);
-    cmd.addPosArg("key", "0");
-    cmd.addPosArg("frequency", "433920000");
-    cmd.addPosArg("te", "0");
-    cmd.addPosArg("count", "10");
+    // Command cmd = rfCmd->addCmd("tx", rfTxCallback);
+    // cmd.addPosArg("key", "0");
+    // cmd.addPosArg("frequency", "433920000");
+    // cmd.addPosArg("te", "0");
+    // cmd.addPosArg("count", "10");
 }
 
 void createRfScanCommand(Command *rfCmd) {
-    Command cmd = rfCmd->addCmd("scan", rfScanCallback);
-    cmd.addPosArg("start_frequency");
-    cmd.addPosArg("stop_frequency");
+    // Command cmd = rfCmd->addCmd("scan", rfScanCallback);
+    // cmd.addPosArg("start_frequency");
+    // cmd.addPosArg("stop_frequency");
 }
 
 void createRfTxFileCommand(Command *rfCmd) {
-    Command cmd = rfCmd->addCmd("tx_from_file", rfTxFileCallback);
-    cmd.addPosArg("filepath");
+    // Command cmd = rfCmd->addCmd("tx_from_file", rfTxFileCallback);
+    // cmd.addPosArg("filepath");
 }
 
 void createRfTxBufferCommand(Command *rfCmd) {
-    Command cmd = rfCmd->addCmd("tx_from_buffer", rfTxBufferCallback);
+    // Command cmd = rfCmd->addCmd("tx_from_buffer", rfTxBufferCallback);
 }
 
 void createRfCommands(SimpleCLI *cli) {

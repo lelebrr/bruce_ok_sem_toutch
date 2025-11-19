@@ -3,6 +3,9 @@
 #include "core/settings.h"
 #include "core/utils.h" // time
 #include "globals.h"
+#include "interface.h"
+
+extern void _setBrightness(uint8_t value);
 
 void brightnessCallback(cmd *c) {
     // backlight brightness adjust (range 0-255) https://docs.flipper.net/development/cli/#XQQAI
@@ -18,7 +21,7 @@ void brightnessCallback(cmd *c) {
     value = min(max(1, value), 100);
 
     Serial.println("Settings led brightness to " + String(value) + "%");
-    setBrightness(value, false);
+    // _setBrightness(value);
     return;
 }
 
@@ -93,18 +96,18 @@ void clockCallback(cmd *c) {
 }
 
 void createScreenCommands(SimpleCLI *cli) {
-    Command clockCmd = cli->addCmd("clock", clockCallback);
+    // Command clockCmd = cli->addCmd("clock", clockCallback);
 
-    Command screenCmd = cli->addCmd("screen");
+    // Command screenCmd = cli->addCmd("screen");
 
-    Command brightCmd = screenCmd.addCmd("br/ight/ness", brightnessCallback);
-    brightCmd.addPosArg("value");
+    // Command brightCmd = screenCmd.addCmd("br/ight/ness", brightnessCallback);
+    // brightCmd.addPosArg("value");
 
-    Command colorCmd = screenCmd.addCmd("color");
-    Command rgbColorCmd = colorCmd.addCmd("rgb", rgbColorCallback);
-    rgbColorCmd.addPosArg("red");
-    rgbColorCmd.addPosArg("green");
-    rgbColorCmd.addPosArg("blue");
-    Command hexColorCmd = colorCmd.addCmd("hex", hexColorCallback);
-    hexColorCmd.addPosArg("value");
+    // Command colorCmd = screenCmd.addCmd("color");
+    // Command rgbColorCmd = colorCmd.addCmd("rgb", rgbColorCallback);
+    // rgbColorCmd.addPosArg("red");
+    // rgbColorCmd.addPosArg("green");
+    // rgbColorCmd.addPosArg("blue");
+    // Command hexColorCmd = colorCmd.addCmd("hex", hexColorCallback);
+    // hexColorCmd.addPosArg("value");
 }
