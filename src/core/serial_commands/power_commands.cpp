@@ -2,40 +2,21 @@
 #include "core/settings.h"
 #include <globals.h>
 
-uint32_t poweroffCallback(cmd *c) {
+void poweroffCallback(cmd *c) {
     powerOff();
     esp_deep_sleep_start(); // only wake up via hardware reset
-    return true;
 }
 
-uint32_t rebootCallback(cmd *c) {
-    ESP.restart();
-    return true;
-}
+void rebootCallback(cmd *c) { ESP.restart(); }
 
-uint32_t sleepCallback(cmd *c) {
-    setSleepMode();
-    return true;
-}
-
-void createPoweroffCommand(SimpleCLI *cli) { Command cmd = cli->addCommand("poweroff", poweroffCallback); }
-
-void createRebootCommand(SimpleCLI *cli) { Command cmd = cli->addCommand("reboot", rebootCallback); }
-
-void createSleepCommand(SimpleCLI *cli) { Command cmd = cli->addCommand("sleep", sleepCallback); }
-
-void createPowerCommand(SimpleCLI *cli) {
-    Command cmd = cli->addCompositeCommand("power");
-
-    Command cmdOff = cmd.addCommand("off", poweroffCallback);
-    Command cmdReboot = cmd.addCommand("reboot", rebootCallback);
-    Command cmdSleep = cmd.addCommand("sleep", sleepCallback);
-}
+void sleepCallback(cmd *c) { setSleepMode(); }
 
 void createPowerCommands(SimpleCLI *cli) {
-    createPoweroffCommand(cli);
-    createRebootCommand(cli);
-    createSleepCommand(cli);
+    Command cmdOff = cli->addCmd("power_off", poweroffCallback);
+    Command cmdReboot = cli->addCmd("power_reboot", rebootCallback);
+    Command cmdSleep = cli->addCmd("power_sleep", sleepCallback);
 
-    createPowerCommand(cli);
+    Command cmdOff2 = cli->addCmd("poweroff", poweroffCallback);
+    Command cmdReboot2 = cli->addCmd("reboot", rebootCallback);
+    Command cmdSleep2 = cli->addCmd("sleep", sleepCallback);
 }

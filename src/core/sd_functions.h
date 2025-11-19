@@ -5,6 +5,21 @@
 #include <LittleFS.h>
 #include <SD.h>
 #include <SPI.h>
+#include <vector>
+
+struct Opt_Coord {
+    int x;
+    int y;
+
+    // Adicionar operador de atribuição
+    Opt_Coord &operator=(const Opt_Coord &other) {
+        if (this != &other) {
+            x = other.x;
+            y = other.y;
+        }
+        return *this;
+    }
+};
 
 struct FileList {
     String filename;
@@ -20,17 +35,17 @@ void closeSdCard();
 
 bool ToggleSDCard();
 
-bool deleteFromSd(FS fs, String path);
+bool deleteFromSd(FS &fs, String path);
 
-bool renameFile(FS fs, String path, String filename);
+bool renameFile(FS &fs, String path, String filename);
 
-bool copyFile(FS fs, String path);
+bool copyFile(FS &fs, String path);
 
-bool copyToFs(FS from, FS to, String path, bool draw = true);
+bool copyToFs(FS &from, FS &to, String path, bool draw = true);
 
-bool pasteFile(FS fs, String path);
+bool pasteFile(FS &fs, String path);
 
-bool createFolder(FS fs, String path);
+bool createFolder(FS &fs, String path);
 
 String readLineFromFile(File myFile);
 
@@ -42,13 +57,15 @@ String md5File(FS &fs, String filepath);
 
 String crc32File(FS &fs, String filepath);
 
-void readFs(FS fs, String folder, String allowed_ext = "*");
+void readFs(FS &fs, String folder, String allowed_ext = "*");
 
 bool sortList(const FileList &a, const FileList &b);
 
+Opt_Coord listFiles(int index, std::vector<FileList> &fileList);
+
 String loopSD(FS &fs, bool filePicker = false, String allowed_ext = "*", String rootPath = "/");
 
-void viewFile(FS fs, String filepath);
+void viewFile(FS &fs, String filepath);
 
 bool checkLittleFsSize();
 
@@ -56,7 +73,7 @@ bool checkLittleFsSizeNM(); // Don't display msg
 
 bool getFsStorage(FS *&fs);
 
-void fileInfo(FS fs, String filepath);
+void fileInfo(FS &fs, String filepath);
 
 File createNewFile(FS *&fs, String filepath, String filename);
 

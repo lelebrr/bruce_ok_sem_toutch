@@ -3,7 +3,7 @@
 #include "helpers.h"
 #include "modules/badusb_ble/ducky_typer.h"
 
-uint32_t badusbFileCallback(cmd *c) {
+void badusbFileCallback(cmd *c) {
     // badusb run_from_file HelloWorld.txt
 
     Command cmd(c);
@@ -14,16 +14,16 @@ uint32_t badusbFileCallback(cmd *c) {
 
     if (filepath.indexOf(".txt") == -1) {
         Serial.println("Invalid filename");
-        return false;
+        return;
     }
     if (!filepath.startsWith("/")) filepath = "/" + filepath;
 
     FS *fs;
-    if (!getFsStorage(fs)) return false;
+    if (!getFsStorage(fs)) return;
 
     if (!(*fs).exists(filepath)) {
         Serial.println("File does not exist");
-        return false;
+        return;
     }
 
 #ifdef USB_as_HID
@@ -36,20 +36,16 @@ uint32_t badusbFileCallback(cmd *c) {
     // Kb.end();
     // USB.~ESPUSB(); // Explicit call to destructor
     // Serial.begin(115200);
-
-    return true;
-#else
-    return false;
 #endif
 }
 
-uint32_t badusbBufferCallback(cmd *c) {
-    if (!(_setupPsramFs())) return false;
+void badusbBufferCallback(cmd *c) {
+    if (!(_setupPsramFs())) return;
 
     char *txt = _readFileFromSerial();
     String tmpfilepath = "/tmpramfile"; // TODO: Change to use char *txt directly
     File f = PSRamFS.open(tmpfilepath, FILE_WRITE);
-    if (!f) return false;
+    if (!f) return;
 
     f.write((const uint8_t *)txt, strlen(txt));
     f.close();
@@ -62,18 +58,13 @@ uint32_t badusbBufferCallback(cmd *c) {
     hid_usb = nullptr;
 
     PSRamFS.remove(tmpfilepath);
-    return true;
-#else
-    PSRamFS.remove(tmpfilepath);
-    return false;
 #endif
+    PSRamFS.remove(tmpfilepath);
 }
 
 void createBadUsbCommands(SimpleCLI *cli) {
-    Command badusbCmd = cli->addCompositeCmd("bu,badusb");
-
-    Command fileCmd = badusbCmd.addCommand("run_from_file", badusbFileCallback);
+    Command fileCmd = cli->addCommand("bu_run_from_file", badusbFileCallback);
     fileCmd.addPosArg("filepath");
 
-    Command bufferCmd = badusbCmd.addCommand("run_from_buffer", badusbBufferCallback);
+    cli->addCommand("bu_run_from_buffer", badusbBufferCallback);
 }

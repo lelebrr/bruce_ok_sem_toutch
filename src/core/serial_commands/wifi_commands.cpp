@@ -27,7 +27,7 @@ uint32_t wifiCallback(cmd *c) {
         }
         if (wifiConnecttoKnownNet()) return true;
         wifiDisconnect();
-        return _setupAP();
+        _setupAP();
 
     } else if (status == "add" && ssid != "" && pwd != "") {
         bruceConfig.addWifiCredential(ssid, pwd);

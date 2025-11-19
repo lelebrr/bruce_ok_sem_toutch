@@ -4,6 +4,7 @@
 #include "rf_utils.h"
 #include "structs.h"
 #include <RCSwitch.h>
+#include <globals.h>
 
 #define _MAX_TRIES 5
 

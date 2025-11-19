@@ -1,6 +1,7 @@
 #include "file_sharing.h"
 #include "core/display.h"
 #include "core/display_functions.h"
+#include <LittleFS.h>
 #include <SD.h>
 FileSharing::FileSharing() {}
 

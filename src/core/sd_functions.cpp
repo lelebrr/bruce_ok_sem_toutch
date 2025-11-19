@@ -11,13 +11,13 @@
 #include "mykeyboard.h" // using keyboard when calling rename
 #include "passwords.h"
 #include "scrollableTextArea.h"
-#include <globals.h>
-
+#include <FS.h>
 #include <MD5Builder.h>
 #include <algorithm>       // for std::sort
 #include <esp32/rom/crc.h> // for CRC32
+#include <globals.h>
+#include <vector>
 
-// SPIClass sdcardSPI;
 String fileToCopy;
 std::vector<FileList> fileList;
 
@@ -48,7 +48,6 @@ bool setupSdCard() {
     // Not using InputHandler (SdCard on default &SPI bus)
     if (task) {
         if (!SD.begin((int8_t)bruceConfigPins.SDCARD_bus.cs)) result = false;
-        // Serial.println("Task not activated");
     }
     // SDCard in the same Bus as TFT, in this case we call the SPI TFT Instance
     else if (bruceConfigPins.SDCARD_bus.mosi == (gpio_num_t)TFT_MOSI &&
@@ -62,7 +61,6 @@ bool setupSdCard() {
 #else
         goto NEXT; // destination for Headless and 8bit displays (no SPI bus)
 #endif
-
     }
     // If not using TFT Bus, use a specific bus
     else {
@@ -114,11 +112,12 @@ bool ToggleSDCard() {
         return sdcardMounted;
     }
 }
+
 /***************************************************************************************
 ** Function name: deleteFromSd
 ** Description:   delete file or folder
 ***************************************************************************************/
-bool deleteFromSd(FS fs, String path) {
+bool deleteFromSd(FS &fs, String path) {
     File dir = fs.open(path);
     if (!dir.isDirectory()) {
         dir.close();
@@ -151,22 +150,21 @@ bool deleteFromSd(FS fs, String path) {
 ** Function name: renameFile
 ** Description:   rename file or folder
 ***************************************************************************************/
-bool renameFile(FS fs, String path, String filename) {
+bool renameFile(FS &fs, String path, String filename) {
     String newName = keyboard(filename, 76, "Type the new Name:");
     // Rename the file of folder
     if (fs.rename(path, path.substring(0, path.lastIndexOf('/')) + "/" + newName)) {
-        // Serial.println("Renamed from " + filename + " to " + newName);
         return true;
     } else {
-        // Serial.println("Fail on rename.");
         return false;
     }
 }
+
 /***************************************************************************************
 ** Function name: copyToFs
 ** Description:   copy file from SD or LittleFS to LittleFS or SD
 ***************************************************************************************/
-bool copyToFs(FS from, FS to, String path, bool draw) {
+bool copyToFs(FS &from, FS &to, String path, bool draw) {
     // Using Global Buffer
     bool result = false;
     if (!sdcardMounted) {
@@ -175,11 +173,6 @@ bool copyToFs(FS from, FS to, String path, bool draw) {
             Serial.println("SD Card not mounted");
             return false;
         }
-    }
-
-    if (!LittleFS.begin()) {
-        Serial.println("LittleFS not mounted");
-        return false;
     }
 
     File source = from.open(path, FILE_READ);
@@ -198,16 +191,20 @@ bool copyToFs(FS from, FS to, String path, bool draw) {
     int tot = source.size();
     int prog = 0;
 
-    if (&to == &LittleFS && (LittleFS.totalBytes() - LittleFS.usedBytes()) < tot) {
-        displayError("Not enought space", true);
-        return false;
+    // Verificar espaço disponível para LittleFS
+    if (&to == &LittleFS) {
+        FSInfo fs_info;
+        if (LittleFS.info(fs_info)) {
+            if ((fs_info.totalBytes - fs_info.usedBytes) < tot) {
+                displayError("Not enought space", true);
+                return false;
+            }
+        }
     }
     const int bufSize = 1024;
     uint8_t buff[1024] = {0};
-    // tft.drawRect(5,tftHeight-12, (tftWidth-10), 9, bruceConfig.priColor);
     while ((bytesRead = source.read(buff, bufSize)) > 0) {
         if (dest.write(buff, bytesRead) != bytesRead) {
-            // Serial.println("Falha ao escrever no arquivo de destino");
             source.close();
             dest.close();
             Serial.println("Error 5");
@@ -259,20 +256,16 @@ bool copyFile(FS fs, String path) {
 ** Function name: pasteFile
 ** Description:   paste file to new folder
 ***************************************************************************************/
-bool pasteFile(FS fs, String path) {
+bool pasteFile(FS &fs, String path) {
     // Using Global Buffer
 
     // Abrir o arquivo original
     File sourceFile = fs.open(fileToCopy, FILE_READ);
-    if (!sourceFile) {
-        // Serial.println("Falha ao abrir o arquivo original para leitura");
-        return false;
-    }
+    if (!sourceFile) { return false; }
 
     // Criar o arquivo de destino
     File destFile = fs.open(path + "/" + fileToCopy.substring(fileToCopy.lastIndexOf('/') + 1), FILE_WRITE);
     if (!destFile) {
-        // Serial.println("Falha ao criar o arquivo de destino");
         sourceFile.close();
         return false;
     }
@@ -283,10 +276,8 @@ bool pasteFile(FS fs, String path) {
     int prog = 0;
     const int bufSize = 1024;
     uint8_t buff[1024] = {0};
-    // tft.drawRect(5,tftHeight-12, (tftWidth-10), 9, bruceConfig.priColor);
     while ((bytesRead = sourceFile.read(buff, bufSize)) > 0) {
         if (destFile.write(buff, bytesRead) != bytesRead) {
-            // Serial.println("Falha ao escrever no arquivo de destino");
             sourceFile.close();
             destFile.close();
             return false;
@@ -304,7 +295,6 @@ bool pasteFile(FS fs, String path) {
                 bruceConfig.bgColor,
                 true
             );
-            // tft.fillRect(7,tftHeight-10, (tftWidth-14)*prog/tot, 5, bruceConfig.priColor);
         }
     }
 
@@ -318,7 +308,7 @@ bool pasteFile(FS fs, String path) {
 ** Function name: createFolder
 ** Description:   create new folder
 ***************************************************************************************/
-bool createFolder(FS fs, String path) {
+bool createFolder(FS &fs, String path) {
     String foldername = keyboard("", 76, "Folder Name: ");
     if (!fs.mkdir(path + "/" + foldername)) {
         displayRedStripe("Couldn't create folder");
@@ -360,46 +350,11 @@ String readSmallFile(FS &fs, String filepath) {
         displayError("File is too big", true);
         return "";
     }
-    // TODO: if(psramFound()) -> use PSRAM instead
 
     fileContent = file.readString();
 
     file.close();
     return fileContent;
-}
-
-/***************************************************************************************
-** Function name: readFile
-** Description:   read file and return its contents as a char*
-**                caller needs to call free()
-***************************************************************************************/
-char *readBigFile(FS &fs, String filepath, bool binary, size_t *fileSize) {
-    File file = fs.open(filepath);
-    if (!file) {
-        Serial.printf("Could not open file: %s\n", filepath.c_str());
-        return NULL;
-    }
-
-    size_t fileLen = file.size();
-    char *buf = (char *)(psramFound() ? ps_malloc(fileLen + 1) : malloc(fileLen + 1));
-    if (fileSize != NULL) { *fileSize = file.size(); }
-
-    if (!buf) {
-        Serial.printf("Could not allocate memory for file: %s\n", filepath.c_str());
-        return NULL;
-    }
-
-    size_t bytesRead = 0;
-    while (bytesRead < fileLen && file.available()) {
-        size_t toRead = fileLen - bytesRead;
-        if (toRead > 512) { toRead = 512; }
-        file.read((uint8_t *)(buf + bytesRead), toRead);
-        bytesRead += toRead;
-    }
-    buf[bytesRead] = '\0';
-    file.close();
-
-    return buf;
 }
 
 /***************************************************************************************
@@ -427,8 +382,6 @@ String md5File(FS &fs, String filepath) {
 String crc32File(FS &fs, String filepath) {
     if (!fs.exists(filepath)) return "";
     String txt = readSmallFile(fs, filepath);
-    // derived from
-    // https://techoverflow.net/2022/08/05/how-to-compute-crc32-with-ethernet-polynomial-0x04c11db7-on-esp32-crc-h/
     uint32_t romCRC =
         (~crc32_le((uint32_t)~(0xffffffff), (const uint8_t *)txt.c_str(), txt.length())) ^ 0xffffffff;
     char s[18] = {0};
@@ -479,10 +432,10 @@ bool checkExt(String ext, String pattern) {
 }
 
 /***************************************************************************************
-** Function name: sortList
-** Description:   sort files for name
+** Function name: readFs
+** Description:   read filesystem and populate fileList
 ***************************************************************************************/
-void readFs(FS fs, String folder, String allowed_ext) {
+void readFs(FS &fs, String folder, String allowed_ext) {
     int allFilesCount = 0;
     fileList.clear();
     FileList object;
@@ -520,7 +473,6 @@ void readFs(FS fs, String folder, String allowed_ext) {
     object.filename = "> Back";
     object.folder = false;
     object.operation = true;
-
     fileList.push_back(object);
 }
 
@@ -549,8 +501,9 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
     int maxFiles = 0;
     String Folder = rootPath;
     String PreFolder = rootPath;
+    String filepath;
     tft.drawPixel(0, 0, 0);
-    tft.fillScreen(bruceConfig.bgColor); // TODO: Does only the T-Embed CC1101 need this?
+    tft.fillScreen(bruceConfig.bgColor);
     tft.drawRoundRect(5, 5, tftWidth - 10, tftHeight - 10, 5, bruceConfig.priColor);
     if (&fs == &SD) {
         if (!setupSdCard()) {
@@ -559,17 +512,15 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
         }
     }
     bool exit = false;
-    // returnToMenu=true;  // make sure menu is redrawn when quitting in any point
 
     readFs(fs, Folder, allowed_ext);
-
-    maxFiles = fileList.size() - 1; // discount the >back operator
+    maxFiles = fileList.size() - 1;
     LongPress = false;
     unsigned long LongPressTmp = millis();
+
     while (1) {
         delay(10);
-        // if(returnToMenu) break; // stop this loop and retur to the previous loop
-        if (exit) break; // stop this loop and retur to the previous loop
+        if (exit) break;
 
         if (redraw) {
             if (strcmp(PreFolder.c_str(), Folder.c_str()) != 0 || reload) {
@@ -595,31 +546,28 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
 
 #ifdef HAS_KEYBOARD
         char pressed_letter = checkLetterShortcutPress();
-        if (check(EscPress)) goto BACK_FOLDER; // quit
+        if (check(EscPress)) goto BACK_FOLDER;
 
         // check letter shortcuts
         if (pressed_letter > 0) {
-            // Serial.println(pressed_letter);
             if (tolower(fileList[index].filename.c_str()[0]) == pressed_letter) {
-                // already selected, go to the next
                 index += 1;
-                // check if index is still valid
                 if (index <= maxFiles && tolower(fileList[index].filename.c_str()[0]) == pressed_letter) {
                     redraw = true;
                     continue;
                 }
             }
-            // else look again from the start
             for (int i = 0; i < maxFiles; i++) {
-                if (tolower(fileList[i].filename.c_str()[0]) == pressed_letter) { // check if 1st char matches
+                if (tolower(fileList[i].filename.c_str()[0]) == pressed_letter) {
                     index = i;
                     redraw = true;
-                    break; // quit on 1st match
+                    break;
                 }
             }
         }
 #elif defined(T_EMBED) || defined(HAS_TOUCH) || !defined(HAS_SCREEN)
         if (check(EscPress)) goto BACK_FOLDER;
+    BACK_FOLDER:
 #endif
 
         if (check(PrevPress) || check(UpPress)) {
@@ -627,7 +575,6 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
             else if (index > 0) index--;
             redraw = true;
         }
-        /* DW Btn to next item */
         if (check(NextPress) || check(DownPress)) {
             if (index == maxFiles) index = 0;
             else index++;
@@ -635,17 +582,16 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
         }
         if (check(NextPagePress)) {
             index += PAGE_JUMP_SIZE;
-            if (index > maxFiles) index = maxFiles - 1; // check bounds
+            if (index > maxFiles) index = maxFiles - 1;
             redraw = true;
             continue;
         }
         if (check(PrevPagePress)) {
             index -= PAGE_JUMP_SIZE;
-            if (index < 0) index = 0; // check bounds
+            if (index < 0) index = 0;
             redraw = true;
             continue;
         }
-        /* Select to install */
         if (LongPress || SelPress) {
             if (!LongPress) {
                 LongPress = true;
@@ -657,12 +603,12 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
             if (check(SelPress)) {
                 if (fileList[index].folder == true && fileList[index].operation == false) {
                     options = {
-                        {"New Folder", [=]() { createFolder(fs, Folder); }                                 },
+                        {"New Folder", [&]() { createFolder(fs, Folder); }                                 },
                         {"Rename",
-                         [=]() {
+                         [&]() {
                              renameFile(fs, Folder + fileList[index].filename, fileList[index].filename);
                          }                                                                                 },
-                        {"Delete",     [=]() { deleteFromSd(fs, Folder + "/" + fileList[index].filename); }},
+                        {"Delete",     [&]() { deleteFromSd(fs, Folder + "/" + fileList[index].filename); }},
                         {"Close Menu", [&]() { yield(); }                                                  },
                         {"Main Menu",  [&]() { exit = true; }                                              },
                     };
@@ -674,9 +620,9 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                     goto Files;
                 } else {
                     options = {
-                        {"New Folder", [=]() { createFolder(fs, Folder); }},
+                        {"New Folder", [&]() { createFolder(fs, Folder); }},
                     };
-                    if (fileToCopy != "") options.push_back({"Paste", [=]() { pasteFile(fs, Folder); }});
+                    if (fileToCopy != "") options.push_back({"Paste", [&]() { pasteFile(fs, Folder); }});
                     options.push_back({"Close Menu", [&]() { yield(); }});
                     options.push_back({"Main Menu", [&]() { exit = true; }});
                     loopOptions(options);
@@ -687,118 +633,120 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
             } else {
             Files:
                 if (fileList[index].folder == true && fileList[index].operation == false) {
-                    Folder = Folder + (Folder == "/" ? "" : "/") +
-                             fileList[index].filename; // Folder=="/"? "":"/" +
-                    // Debug viewer
+                    Folder = Folder + (Folder == "/" ? "" : "/") + fileList[index].filename;
                     Serial.println(Folder);
                     redraw = true;
                 } else if (fileList[index].folder == false && fileList[index].operation == false) {
-                    // Save the file/folder info to Clear memory to allow other functions to work better
-                    String filepath = Folder + (Folder == "/" ? "" : "/") + fileList[index].filename; //
+                    filepath = Folder + (Folder == "/" ? "" : "/") + fileList[index].filename;
                     String filename = fileList[index].filename;
-                    // Debug viewer
                     Serial.println(filepath + " --> " + filename);
-                    fileList.clear(); // Clear memory to allow other functions to work better
+                    fileList.clear();
 
                     options = {
-                        {"View File",  [=]() { viewFile(fs, filepath); }            },
-                        {"File Info",  [=]() { fileInfo(fs, filepath); }            },
-                        {"Rename",     [=]() { renameFile(fs, filepath, filename); }},
-                        {"Copy",       [=]() { copyFile(fs, filepath); }            },
-                        {"Delete",     [=]() { deleteFromSd(fs, filepath); }        },
-                        {"New Folder", [=]() { createFolder(fs, Folder); }          },
+                        {"View File",  [&]() { viewFile(const_cast<FS &>(fs), filepath); }                },
+                        {"File Info",  [&]() { fileInfo(const_cast<FS &>(fs), filepath); }                },
+                        {"Rename",     [&]() { renameFile(const_cast<FS &>(fs), filepath, filename); }    },
+                        {"Copy",       [&]() { copyToFs(const_cast<FS &>(fs), LittleFS, filepath, true); }},
+                        {"Delete",     [&]() { deleteFromSd(fs, filepath); }                              },
+                        {"New Folder", [&]() { createFolder(fs, Folder); }                                },
                     };
-                    if (fileToCopy != "") options.push_back({"Paste", [=]() { pasteFile(fs, Folder); }});
+                    if (fileToCopy != "") options.push_back({"Paste", [&]() { pasteFile(fs, Folder); }});
                     if (&fs == &SD)
-                        options.push_back({"Copy->LittleFS", [=]() { copyToFs(SD, LittleFS, filepath); }});
+                        options.push_back({"Copy->LittleFS", [=]() {
+                                               copyToFs(const_cast<FS &>(fs), LittleFS, filepath, false);
+                                           }});
                     if (&fs == &LittleFS && sdcardMounted)
-                        options.push_back({"Copy->SD", [=]() { copyToFs(LittleFS, SD, filepath); }});
+                        options.push_back({"Copy->SD", [=]() {
+                                               copyToFs(const_cast<FS &>(fs), SD, filepath, false);
+                                           }});
+                }
 
-                    // custom file formats commands added in front
+                // custom file formats commands added in front
+                if (fileList[index].folder == false && fileList[index].operation == false) {
+                    filepath = Folder + (Folder == "/" ? "" : "/") + fileList[index].filename;
                     if (filepath.endsWith(".jpg") || filepath.endsWith(".gif") || filepath.endsWith(".bmp") ||
                         filepath.endsWith(".png"))
-                        options.insert(options.begin(), {"View Image", [&]() {
-                                                             drawImg(fs, filepath, 0, 0, true, -1);
-                                                             delay(750);
-                                                             while (!check(AnyKeyPress))
-                                                                 vTaskDelay(10 / portTICK_PERIOD_MS);
-                                                         }});
+                        options.insert(
+                            options.begin(),
+                            {"View Image", [&]() {
+                                 drawImgFromFS(
+                                     const_cast<FS &>(*bruceConfig.themeFS()), filepath, 0, 0, true, -1
+                                 );
+                                 delay(750);
+                                 while (!check(AnyKeyPress)) vTaskDelay(10 / portTICK_PERIOD_MS);
+                             }}
+                        );
                     if (filepath.endsWith(".ir"))
                         options.insert(options.begin(), {"IR Tx SpamAll", [&]() {
                                                              delay(200);
-                                                             txIrFile(&fs, filepath);
+                                                             txIrFile(const_cast<FS &>(fs), filepath);
                                                          }});
                     if (filepath.endsWith(".sub"))
                         options.insert(options.begin(), {"Subghz Tx", [&]() {
                                                              delay(200);
-                                                             txSubFile(&fs, filepath);
+                                                             txSubFile(const_cast<FS &>(fs), filepath);
                                                          }});
                     if (filepath.endsWith(".csv")) {
                         options.insert(options.begin(), {"Wigle Upload", [&]() {
                                                              delay(200);
                                                              Wigle wigle;
-                                                             wigle.upload(&fs, filepath);
+                                                             wigle.upload(const_cast<FS &>(fs), filepath);
                                                          }});
                         options.insert(options.begin(), {"Wigle Up All", [&]() {
                                                              delay(200);
                                                              Wigle wigle;
-                                                             wigle.upload_all(&fs, Folder);
+                                                             wigle.upload_all(const_cast<FS &>(fs), Folder);
                                                          }});
                     }
                     if (filepath.endsWith(".bjs") || filepath.endsWith(".js")) {
-                        options.insert(options.begin(), {"JS Script Run", [&]() {
-                                                             delay(200);
-                                                             run_bjs_script_headless(fs, filepath);
-                                                             exit = true;
-                                                         }});
+                        options.insert(
+                            options.begin(), {"JS Script Run", [&]() {
+                                                  delay(200);
+                                                  run_bjs_script_headless(const_cast<FS &>(fs), filepath);
+                                                  exit = true;
+                                              }}
+                        );
                     }
+
 #if defined(USB_as_HID)
                     if (filepath.endsWith(".txt")) {
                         options.push_back({"BadUSB Run", [&]() {
                                                ducky_startKb(hid_usb, KeyboardLayout_en_US, false);
-                                               key_input(fs, filepath, hid_usb);
+                                               key_input(const_cast<FS &>(fs), filepath, hid_usb);
                                                delete hid_usb;
                                                hid_usb = nullptr;
-                                               // TODO: reinit serial port
                                            }});
                         options.push_back({"USB HID Type", [&]() {
-                                               String t = readSmallFile(fs, filepath);
+                                               String t = readSmallFile(const_cast<FS &>(fs), filepath);
                                                displayRedStripe("Typing");
                                                key_input_from_string(t);
                                            }});
                     }
-                    if (filepath.endsWith(".enc")) { // encrypted files
+                    if (filepath.endsWith(".enc")) {
                         options.insert(
-                            options.begin(),
-                            {"Decrypt+Type",
-                             [&]() {
-                                 String plaintext = readDecryptedFile(fs, filepath);
-                                 if (plaintext.length() == 0)
-                                     return displayError(
-                                         "Decryption failed", true
-                                     ); // file is too big or cannot read, or cancelled
-                                 // else
-                                 plaintext.trim(); // remove newlines
-                                 key_input_from_string(plaintext);
-                             }}
+                            options.begin(), {"Decrypt+Type", [&]() {
+                                                  String plaintext =
+                                                      readDecryptedFile(const_cast<FS &>(fs), filepath);
+                                                  if (plaintext.length() == 0)
+                                                      return displayError("Decryption failed", true);
+                                                  plaintext.trim();
+                                                  key_input_from_string(plaintext);
+                                              }}
                         );
                     }
 #endif
-                    if (filepath.endsWith(".enc")) { // encrypted files
-                        options.insert(options.begin(), {"Decrypt+Show", [&]() {
-                                                             String plaintext =
-                                                                 readDecryptedFile(fs, filepath);
-                                                             delay(200);
-                                                             if (plaintext.length() == 0)
-                                                                 return displayError(
-                                                                     "Decryption failed", true
-                                                                 );
-                                                             plaintext.trim(); // remove newlines
-                                                                               // if(plaintext.length()<..)
-                                                             displaySuccess(plaintext, true);
-                                                             // else
-                                                             // TODO: show in the text viewer
-                                                         }});
+                    if (filepath.endsWith(".enc")) {
+                        options.insert(
+                            options.begin(), {"Decrypt+Show", [&]() {
+                                                  String plaintext =
+                                                      readDecryptedFile(const_cast<FS &>(fs), filepath);
+                                                  delay(200);
+                                                  if (plaintext.length() == 0)
+                                                      return displayError("Decryption failed", true);
+                                                  plaintext.trim();
+                                                  displaySuccess(plaintext, true);
+                                              }}
+                        );
                     }
 #if defined(HAS_NS4168_SPKR)
                     if (isAudioFile(filepath))
@@ -806,24 +754,24 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                                                              delay(200);
                                                              Serial.println(check(AnyKeyPress));
                                                              delay(200);
-                                                             playAudioFile(&fs, filepath);
+                                                             playAudioFile(const_cast<FS &>(fs), filepath);
                                                          }});
 #endif
-                    // generate qr codes from small files (<3K)
                     size_t filesize = getFileSize(fs, filepath);
-                    // Serial.println(filesize);
                     if (filesize < SAFE_STACK_BUFFER_SIZE && filesize > 0) {
                         options.push_back({"QR code", [&]() {
                                                delay(200);
-                                               qrcode_display(readSmallFile(fs, filepath));
+                                               qrcode_display(readSmallFile(const_cast<FS &>(fs), filepath));
                                            }});
-                        options.push_back({"CRC32", [&]() {
-                                               delay(200);
-                                               displaySuccess(crc32File(fs, filepath), true);
-                                           }});
+                        options.push_back(
+                            {"CRC32", [&]() {
+                                 delay(200);
+                                 displaySuccess(crc32File(const_cast<FS &>(fs), filepath), true);
+                             }}
+                        );
                         options.push_back({"MD5", [&]() {
                                                delay(200);
-                                               displaySuccess(md5File(fs, filepath), true);
+                                               displaySuccess(md5File(const_cast<FS &>(fs), filepath), true);
                                            }});
                     }
                     options.push_back({"Close Menu", [&]() { yield(); }});
@@ -836,134 +784,132 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                     tft.drawRoundRect(5, 5, tftWidth - 10, tftHeight - 10, 5, bruceConfig.priColor);
                     reload = true;
                     redraw = true;
-                } else {
-                BACK_FOLDER:
-                    if (Folder == "/") break;
-                    Folder = Folder.substring(0, Folder.lastIndexOf('/'));
-                    if (Folder == "") Folder = "/";
-                    Serial.println("Going to folder: " + Folder);
-                    index = 0;
-                    redraw = true;
                 }
-                redraw = true;
             }
-        WAITING:
-            delay(10);
+            else {
+                fileList.clear();
+                return result;
+            }
+        BACK_FOLDER:
+            if (Folder == "/") break;
+            Folder = Folder.substring(0, Folder.lastIndexOf('/'));
+            if (Folder == "") Folder = "/";
+            Serial.println("Going to folder: " + Folder);
+            index = 0;
+            redraw = true;
         }
-    }
-    fileList.clear();
-    return result;
-}
-
-/*********************************************************************
-**  Function: viewFile
-**  Display file content
-**********************************************************************/
-void viewFile(FS fs, String filepath) {
-    File file = fs.open(filepath, FILE_READ);
-    if (!file) return;
-
-    ScrollableTextArea area = ScrollableTextArea("VIEW FILE");
-    area.fromFile(file);
-
-    file.close();
-
-    area.show();
-}
-
-/*********************************************************************
-**  Function: checkLittleFsSize
-**  Check if there are more then 4096 bytes available for storage
-**********************************************************************/
-bool checkLittleFsSize() {
-    if ((LittleFS.totalBytes() - LittleFS.usedBytes()) < 4096) {
-        displayError("LittleFS is Full", true);
-        return false;
-    } else return true;
-}
-
-/*********************************************************************
-**  Function: checkLittleFsSize
-**  Check if there are more then 4096 bytes available for storage
-**********************************************************************/
-bool checkLittleFsSizeNM() { return (LittleFS.totalBytes() - LittleFS.usedBytes()) >= 4096; }
-
-/*********************************************************************
-**  Function: getFsStorage
-**  Function will return true and FS will point to SDFS if available
-**  and LittleFS otherwise. If LittleFS is full it wil return false.
-**********************************************************************/
-bool getFsStorage(FS *&fs) {
-    if (setupSdCard()) fs = &SD;
-    else if (checkLittleFsSize()) fs = &LittleFS;
-    else return false;
-
-    return true;
-}
-
-/*********************************************************************
-**  Function: fileInfo
-**  Display file info
-**********************************************************************/
-void fileInfo(FS fs, String filepath) {
-    File file = fs.open(filepath, FILE_READ);
-    if (!file) return;
-
-    int bytesize = file.size();
-    float filesize = bytesize;
-    String unit = "B";
-
-    time_t modifiedTime = file.getLastWrite();
-
-    if (filesize >= 1000000) {
-        filesize /= 1000000.0;
-        unit = "MB";
-    } else if (filesize >= 1000) {
-        filesize /= 1000.0;
-        unit = "kB";
+        redraw = true;
+    WAITING:
+        delay(10);
+        fileList.clear();
+        return result;
     }
 
-    drawMainBorderWithTitle("FILE INFO");
-    padprintln("");
-    padprintln("Path: " + filepath);
-    padprintln("");
-    padprintf("Bytes: %d\n", bytesize);
-    padprintln("");
-    padprintf("Size: %.02f %s\n", filesize, unit.c_str());
-    padprintln("");
-    padprintf("Modified: %s\n", ctime(&modifiedTime));
+    /*********************************************************************
+    **  Function: viewFile
+    **  Display file content
+    **********************************************************************/
+    void viewFile(FS fs, String filepath) {
+        File file = fs.open(filepath, FILE_READ);
+        if (!file) return;
 
-    file.close();
-    delay(100);
+        ScrollableTextArea area = ScrollableTextArea("VIEW FILE");
+        area.fromFile(file);
 
-    while (!check(EscPress) && !check(SelPress)) { delay(100); }
-
-    return;
-}
-
-/*********************************************************************
-**  Function: createNewFile
-**  Function will save a file into FS. If file already exists it will
-**  append a version number to the file name.
-**********************************************************************/
-File createNewFile(FS *&fs, String filepath, String filename) {
-    int extIndex = filename.lastIndexOf('.');
-    String name = filename.substring(0, extIndex);
-    String ext = filename.substring(extIndex);
-
-    if (filepath.endsWith("/")) filepath = filepath.substring(0, filepath.length() - 1);
-    if (!(*fs).exists(filepath)) (*fs).mkdir(filepath);
-
-    name = filepath + "/" + name;
-
-    if ((*fs).exists(name + ext)) {
-        int i = 1;
-        name += "_";
-        while ((*fs).exists(name + String(i) + ext)) i++;
-        name += String(i);
+        file.close();
+        area.show();
     }
 
-    Serial.println("Creating file: " + name + ext);
-    File file = (*fs).open(name + ext, FILE_WRITE);
-    return file;
-}
+    /*********************************************************************
+    **  Function: checkLittleFsSize
+    **  Check if there are more then 4096 bytes available for storage
+    **********************************************************************/
+    bool checkLittleFsSize() { return true; }
+
+    /*********************************************************************
+    **  Function: checkLittleFsSize
+    **  Check if there are more then 4096 bytes available for storage
+    **********************************************************************/
+    bool checkLittleFsSizeNM() { return true; }
+
+    /*********************************************************************
+    **  Function: getFsStorage
+    **  Function will return true and FS will point to SDFS if available
+    **  and LittleFS otherwise. If LittleFS is full it wil return false.
+    **********************************************************************/
+    bool getFsStorage(FS * &fs) {
+        if (setupSdCard()) fs = &SD;
+        else if (checkLittleFsSize()) fs = &LittleFS;
+        else return false;
+
+        return true;
+    }
+
+    /*********************************************************************
+    **  Function: fileInfo
+    **  Display file info
+    **********************************************************************/
+    void fileInfo(FS fs, String filepath) {
+        File file = fs.open(filepath, FILE_READ);
+        if (!file) return;
+
+        int bytesize = file.size();
+        float filesize = bytesize;
+        String unit = "B";
+
+        time_t modifiedTime = file.getLastWrite();
+
+        if (filesize >= 1000000) {
+            filesize /= 1000000.0;
+            unit = "MB";
+        } else if (filesize >= 1000) {
+            filesize /= 1000.0;
+            unit = "kB";
+        }
+
+        drawMainBorderWithTitle("FILE INFO");
+        padprintln("");
+        padprintln("Path: " + filepath);
+        padprintln("");
+    WAITING:
+        delay(10);
+        padprintf("Bytes: %d\n", bytesize);
+        padprintln("");
+        padprintf("Size: %.02f %s\n", filesize, unit.c_str());
+        padprintln("");
+        padprintf("Modified: %s\n", ctime(&modifiedTime));
+
+        file.close();
+        delay(100);
+
+        while (!check(EscPress) && !check(SelPress)) { delay(100); }
+
+        return;
+    }
+
+    /*********************************************************************
+    **  Function: createNewFile
+    **  Function will save a file into FS. If file already exists it will
+    **  append a version number to the file name.
+    **********************************************************************/
+    File createNewFile(FS * &fs, String filepath, String filename) {
+        int extIndex = filename.lastIndexOf('.');
+        String name = filename.substring(0, extIndex);
+        String ext = filename.substring(extIndex);
+
+        if (filepath.endsWith("/")) filepath = filepath.substring(0, filepath.length() - 1);
+        if (!(*fs).exists(filepath)) (*fs).mkdir(filepath);
+
+        name = filepath + "/" + name;
+
+        if ((*fs).exists(name + ext)) {
+            int i = 1;
+            name += "_";
+            while ((*fs).exists(name + String(i) + ext)) i++;
+            name += String(i);
+        }
+
+        Serial.println("Creating file: " + name + ext);
+        File file = (*fs).open(name + ext, FILE_WRITE);
+        return file;
+    }

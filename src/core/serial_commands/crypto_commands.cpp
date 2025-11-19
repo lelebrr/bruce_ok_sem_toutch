@@ -5,7 +5,7 @@
 #include "modules/badusb_ble/ducky_typer.h"
 #include <globals.h>
 
-uint32_t decryptFileCallback(cmd *c) {
+void decryptFileCallback(cmd *c) {
     // crypto decrypt_from_file passwords/github.com.txt.enc 1234
 
     Command cmd(c);
@@ -22,21 +22,20 @@ uint32_t decryptFileCallback(cmd *c) {
     cachedPassword = password;
 
     FS *fs;
-    if (!getFsStorage(fs)) return false;
+    if (!getFsStorage(fs)) return;
 
     if (!(*fs).exists(filepath)) {
         Serial.println("File does not exist");
-        return false;
+        return;
     }
 
     String plaintext = readDecryptedFile(*fs, filepath);
-    if (plaintext == "") return false;
+    if (plaintext == "") return;
 
     Serial.println(plaintext);
-    return true;
 }
 
-uint32_t encryptFileCallback(cmd *c) {
+void encryptFileCallback(cmd *c) {
     // crypto encrypt_to_file passwords/github.com.txt.enc 1234
 
     Command cmd(c);
@@ -53,25 +52,24 @@ uint32_t encryptFileCallback(cmd *c) {
     cachedPassword = password;
 
     char *txt = _readFileFromSerial();
-    if (strlen(txt) == 0) return false;
+    if (strlen(txt) == 0) return;
     String txtString = String(txt);
 
     FS *fs;
-    if (!getFsStorage(fs)) return false;
+    if (!getFsStorage(fs)) return;
 
     File f = fs->open(filepath, FILE_WRITE);
-    if (!f) return false;
+    if (!f) return;
 
     String cyphertxt = encryptString(txtString, cachedPassword);
-    if (cyphertxt == "") return false;
+    if (cyphertxt == "") return;
 
     f.write((const uint8_t *)cyphertxt.c_str(), cyphertxt.length());
     f.close();
     Serial.println("File written: " + filepath);
-    return true;
 }
 
-uint32_t typeFileCallback(cmd *c) {
+void typeFileCallback(cmd *c) {
     Command cmd(c);
 
     Argument arg = cmd.getArgument("filepath");
@@ -86,43 +84,32 @@ uint32_t typeFileCallback(cmd *c) {
     cachedPassword = password;
 
     FS *fs;
-    if (!getFsStorage(fs)) return false;
+    if (!getFsStorage(fs)) return;
 
     if (!(*fs).exists(filepath)) {
         Serial.println("File does not exist");
-        return false;
+        return;
     }
 
     String plaintext = readDecryptedFile(*fs, filepath);
-    if (plaintext == "") return false;
+    if (plaintext == "") return;
 
     Serial.println(plaintext);
 
     key_input_from_string(plaintext);
-    return true;
 }
 
 void createCryptoCommands(SimpleCLI *cli) {
-    Command cryptoCmd = cli->addCompositeCmd("crypto");
-
-    Command decryptCmd = cli->addCommand("decrypt", decryptFileCallback);
+    Command decryptCmd = cli->addCommand("crypto_decrypt_from_file", decryptFileCallback);
     decryptCmd.addPosArg("filepath");
     decryptCmd.addPosArg("password");
 
-    Command decryptFileCmd = cryptoCmd.addCommand("decrypt_from_file", decryptFileCallback);
-    decryptFileCmd.addPosArg("filepath");
-    decryptFileCmd.addPosArg("password");
-
-    Command encryptCmd = cli->addCommand("encrypt", encryptFileCallback);
+    Command encryptCmd = cli->addCommand("crypto_encrypt_to_file", encryptFileCallback);
     encryptCmd.addPosArg("filepath");
     encryptCmd.addPosArg("password");
 
-    Command encryptFileCmd = cryptoCmd.addCommand("encrypt_to_file", encryptFileCallback);
-    encryptFileCmd.addPosArg("filepath");
-    encryptFileCmd.addPosArg("password");
-
 #ifdef USB_as_HID
-    Command typeFileCmd = cryptoCmd.addCommand("type_from_file", typeFileCallback);
+    Command typeFileCmd = cli->addCommand("crypto_type_from_file", typeFileCallback);
     typeFileCmd.addPosArg("filepath");
     typeFileCmd.addPosArg("password");
 #endif

@@ -1,9 +1,10 @@
 #include "screen_commands.h"
+#include "core/display_functions.h"
 #include "core/settings.h"
 #include "core/utils.h" // time
-#include <globals.h>
+#include "globals.h"
 
-uint32_t brightnessCallback(cmd *c) {
+void brightnessCallback(cmd *c) {
     // backlight brightness adjust (range 0-255) https://docs.flipper.net/development/cli/#XQQAI
     // e.g. "led br 127"
 
@@ -18,10 +19,10 @@ uint32_t brightnessCallback(cmd *c) {
 
     Serial.println("Settings led brightness to " + String(value) + "%");
     setBrightness(value, false);
-    return true;
+    return;
 }
 
-uint32_t rgbColorCallback(cmd *c) {
+void rgbColorCallback(cmd *c) {
     // change UI color
     // e.g. "screen color rgb 255 255 255"
 
@@ -43,15 +44,14 @@ uint32_t rgbColorCallback(cmd *c) {
 
     if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
         Serial.println("Invalid color: " + strRed + " " + strGreen + " " + strBlue);
-        return false;
+        return;
     }
 
     uint16_t hexColor = tft.color565(r, g, b);
     bruceConfig.priColor = hexColor; // change global var, dont save in config
-    return true;
 }
 
-uint32_t hexColorCallback(cmd *c) {
+void hexColorCallback(cmd *c) {
     // change UI color
     // e.g. "screen color hex ff00ff"
 
@@ -63,14 +63,14 @@ uint32_t hexColorCallback(cmd *c) {
 
     if (strValue.length() % 2 == 1) {
         Serial.println("Invalid hex value: " + strValue);
-        return false;
+        return;
     }
 
     uint32_t value = static_cast<uint32_t>(std::stoul(strValue.c_str(), nullptr, 16));
 
     if (value > 0xFFFFFF) {
         Serial.println("Invalid color: " + strValue);
-        return false;
+        return;
     }
 
     uint16_t r = (value >> 8) & 0xF800;
@@ -79,34 +79,32 @@ uint32_t hexColorCallback(cmd *c) {
 
     uint16_t hexColor = (r | g | b);
     bruceConfig.priColor = hexColor; // change global var, dont save in config
-    return true;
 }
 
-uint32_t clockCallback(cmd *c) {
+void clockCallback(cmd *c) {
 #if defined(HAS_RTC)
     _rtc.GetTime(&_time);
     snprintf(timeStr, sizeof(timeStr), "%02d:%02d", _time.Hours, _time.Minutes);
     Serial.printf("\nCurrent time: %s", timeStr);
 #else
     updateTimeStr(rtc.getTimeStruct());
-    Serial.printf("\nCurrent time: %s", timeStr);
 #endif
-    return true;
+    return;
 }
 
 void createScreenCommands(SimpleCLI *cli) {
-    Command clockCmd = cli->addCommand("clock", clockCallback);
+    Command clockCmd = cli->addCmd("clock", clockCallback);
 
-    Command screenCmd = cli->addCompositeCmd("screen");
+    Command screenCmd = cli->addCmd("screen");
 
-    Command brightCmd = screenCmd.addCommand("br/ight/ness", brightnessCallback);
+    Command brightCmd = screenCmd.addCmd("br/ight/ness", brightnessCallback);
     brightCmd.addPosArg("value");
 
-    Command colorCmd = screenCmd.addCompositeCmd("color");
-    Command rgbColorCmd = colorCmd.addCommand("rgb", rgbColorCallback);
+    Command colorCmd = screenCmd.addCmd("color");
+    Command rgbColorCmd = colorCmd.addCmd("rgb", rgbColorCallback);
     rgbColorCmd.addPosArg("red");
     rgbColorCmd.addPosArg("green");
     rgbColorCmd.addPosArg("blue");
-    Command hexColorCmd = colorCmd.addCommand("hex", hexColorCallback);
+    Command hexColorCmd = colorCmd.addCmd("hex", hexColorCallback);
     hexColorCmd.addPosArg("value");
 }

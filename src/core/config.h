@@ -1,6 +1,20 @@
 #ifndef __BRUCE_CONFIG_H__
 #define __BRUCE_CONFIG_H__
 
+// Ensure macros are defined before use
+#ifndef ROTATION
+#define ROTATION 1
+#endif
+#ifndef LED
+#define LED GROVE_SDA
+#endif
+#ifndef GROVE_SCL
+#define GROVE_SCL -1
+#endif
+#ifndef GROVE_SDA
+#define GROVE_SDA -1
+#endif
+
 #include "theme.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>

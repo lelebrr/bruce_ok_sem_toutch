@@ -4,7 +4,7 @@
 
 void ClockMenu::optionsMenu() { runClockLoop(); }
 void ClockMenu::drawIconImg() {
-    drawImg(
+    drawImgFromFS(
         *bruceConfig.themeFS(),
         bruceConfig.getThemeItemImg(bruceConfig.theme.paths.clock),
         0,

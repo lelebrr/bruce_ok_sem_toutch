@@ -8,7 +8,7 @@
 #include <Wire.h>
 #include <globals.h>
 
-uint32_t uptimeCallback(cmd *c) {
+void uptimeCallback(cmd *c) {
     // https://github.com/espressif/arduino-esp32/blob/66c9c0b1a6a36b85d27cdac0fb52098368de1a09/libraries/WebServer/examples/AdvancedWebServer/AdvancedWebServer.ino#L64
 
     int sec = millis() / 1000;
@@ -18,13 +18,13 @@ uint32_t uptimeCallback(cmd *c) {
     char temp[400];
     snprintf(temp, 400, "Uptime: %02d:%02d:%02d", hr, min, sec);
     Serial.println(temp);
-    return true;
+    return;
 }
 
-uint32_t dateCallback(cmd *c) {
+void dateCallback(cmd *c) {
     if (!clock_set) {
         Serial.println("Clock not set");
-        return false;
+        return;
     }
 
     Serial.print("Current time: ");
@@ -50,10 +50,9 @@ uint32_t dateCallback(cmd *c) {
     Serial.println(stimeStr);
 #endif
 
-    return true;
+    return;
 }
-
-uint32_t i2cCallback(cmd *c) {
+void i2cCallback(cmd *c) {
     // scan for connected i2c modules
     // derived from https://learn.adafruit.com/scanning-i2c-addresses/arduino
     Wire.begin(bruceConfigPins.i2c_bus.sda, bruceConfigPins.i2c_bus.scl);
@@ -81,13 +80,12 @@ uint32_t i2cCallback(cmd *c) {
 
     if (nDevices == 0) {
         Serial.println("No I2C devices found");
-        return false;
+        return;
     }
 
-    return true;
+    return;
 }
-
-uint32_t freeCallback(cmd *c) {
+void freeCallback(cmd *c) {
     Serial.print("Total heap: ");
     Serial.println(ESP.getHeapSize());
     Serial.print("Free heap: ");
@@ -100,10 +98,9 @@ uint32_t freeCallback(cmd *c) {
         Serial.println(ESP.getFreePsram());
     }
 
-    return true;
+    return;
 }
-
-uint32_t infoCallback(cmd *c) {
+void infoCallback(cmd *c) {
     Serial.print("Bruce v");
     Serial.println(BRUCE_VERSION);
     Serial.println(GIT_COMMIT_HASH);
@@ -127,10 +124,9 @@ uint32_t infoCallback(cmd *c) {
 
     Serial.println("Device: " + String(DEVICE_NAME));
 
-    return true;
+    return;
 }
-
-uint32_t helpCallback(cmd *c) {
+void helpCallback(cmd *c) {
     Serial.print("Bruce v");
     Serial.print(BRUCE_VERSION);
     Serial.print("\nThese shell commands are defined internally.\n");
@@ -185,7 +181,7 @@ uint32_t helpCallback(cmd *c) {
     Serial.println("  settings <name> <new value>  - Alter a single setting value.");
     Serial.println("  factory_reset           - Reset to default configuration.");
 
-    return true;
+    return;
 }
 
 void optionsList() {
@@ -199,7 +195,7 @@ void optionsList() {
     }
 }
 
-uint32_t navCallback(cmd *c) {
+void navCallback(cmd *c) {
     Command cmd(c);
     volatile bool *var = &NextPress;
     Argument arg = cmd.getArgument("command");
@@ -244,7 +240,7 @@ uint32_t navCallback(cmd *c) {
             "Unknown command, use: \n\"nav Next\" or \n\"nav Prev\" or \n\"nav Esc\" or \n\"nav Select\" or "
             "\n\"nav Up\" or \n\"nav Down\" or \n\"nav NextPage\" or \n\"nav PrevPage\""
         );
-        return false;
+        return;
     }
     // wakeUpScreen(); // Do not wakeup screen if it is dimmed and using Remote control
     unsigned long tmp = millis();
@@ -261,10 +257,10 @@ uint32_t navCallback(cmd *c) {
     Serial.printf("and Released after %lums", tmp);
     optionsList();
 
-    return true;
+    return;
 }
 
-uint32_t optionsCallback(cmd *c) {
+void optionsCallback(cmd *c) {
     Command cmd(c);
     Argument arg = cmd.getArgument("run");
     // int opt = arg.getValue().startsWith("-") ? -1 : arg.getValue().toInt();
@@ -279,15 +275,16 @@ uint32_t optionsCallback(cmd *c) {
     } else if (options.size() > 0) {
         optionsList();
     } else Serial.println("No options Available");
-    return true;
-}
-uint32_t optionsJsonCallback(cmd *c) {
-    String response = getOptionsJSON(); // core/utils.h
-    Serial.println(response);
-    return true;
+    return;
 }
 
-uint32_t displayCallback(cmd *c) {
+void optionsJsonCallback(cmd *c) {
+    String response = getOptionsJSON(); // core/utils.h
+    Serial.println(response);
+    return;
+}
+
+void displayCallback(cmd *c) {
     Command cmd(c);
     Argument arg = cmd.getArgument("option");
     String opt = arg.getValue();
@@ -321,12 +318,12 @@ uint32_t displayCallback(cmd *c) {
             "display status: Get Logging state\n"
             "display dump  : Dumps binary log"
         );
-        return false;
+        return;
     }
-    return true;
+    return;
 }
 
-uint32_t loaderCallback(cmd *c) {
+void loaderCallback(cmd *c) {
     Command cmd(c);
     String arg = cmd.getArgument("cmd").getValue();
     String appname = cmd.getArgument("appname").getValue();
@@ -339,7 +336,7 @@ uint32_t loaderCallback(cmd *c) {
         Serial.println("BadUSB");
         Serial.println("WebUI");
         Serial.println("LittleFS");
-        return true;
+        return;
 
     } else if (arg == "open") {
         if (!appname.isEmpty()) {
@@ -348,23 +345,23 @@ uint32_t loaderCallback(cmd *c) {
                 if (appname.equalsIgnoreCase(_menuItems[i]->getName())) {
                     // open the associated app
                     _menuItems[i]->optionsMenu();
-                    return true;
+                    return;
                 }
             }
             // additional shortcuts
             if (appname.equalsIgnoreCase("badusb")) {
                 ducky_setup(hid_usb, false);
-                return true;
+                return;
             } else if (appname.equalsIgnoreCase("webui")) {
                 loopOptionsWebUi();
-                return true;
+                return;
             } else if (appname.equalsIgnoreCase("littlefs")) {
                 loopSD(LittleFS);
-                return true;
+                return;
             }
             // else no matching app name found
             Serial.println("app not found: " + appname);
-            return false;
+            return;
         }
 
     } else {
@@ -373,33 +370,33 @@ uint32_t loaderCallback(cmd *c) {
             "loader list : Lists available applications\n"
             "loader open appname  : Runs the entered application.\n"
         );
-        return false;
+        return;
     }
 
     // TODO: close: Closes the running application.
     // TODO: info: Displays the loader’s state.
-    return false;
+    return;
 }
 
 void createUtilCommands(SimpleCLI *cli) {
-    cli->addCommand("uptime", uptimeCallback);
-    cli->addCommand("date", dateCallback);
-    cli->addCommand("i2c", i2cCallback);
-    cli->addCommand("free", freeCallback);
-    cli->addCommand("info,!,device_info", infoCallback);
-    cli->addCommand("help,?,halp", helpCallback);
-    cli->addCommand("optionsJSON", optionsJsonCallback);
-    Command display = cli->addCommand("display", displayCallback);
+    cli->addCmd("uptime", uptimeCallback);
+    cli->addCmd("date", dateCallback);
+    cli->addCmd("i2c", i2cCallback);
+    cli->addCmd("free", freeCallback);
+    cli->addCmd("info,!,device_info", infoCallback);
+    cli->addCmd("help,?,halp", helpCallback);
+    cli->addCmd("optionsJSON", optionsJsonCallback);
+    Command display = cli->addCmd("display", displayCallback);
     display.addPosArg("option", "dump");
 
-    Command navigation = cli->addCommand("nav,navigate,navigation", navCallback);
+    Command navigation = cli->addCmd("nav,navigate,navigation", navCallback);
     navigation.addPosArg("command");
     navigation.addPosArg("duration", "1");
 
-    Command opt = cli->addCommand("options,option", optionsCallback);
+    Command opt = cli->addCmd("options,option", optionsCallback);
     opt.addPosArg("run", "-1");
 
-    Command loader = cli->addCommand("loader", loaderCallback);
+    Command loader = cli->addCmd("loader", loaderCallback);
     loader.addPosArg("cmd");
     loader.addPosArg("appname", "none"); // optional
 }

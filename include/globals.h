@@ -7,17 +7,23 @@
 
 #define ALCOLOR TFT_RED
 
-#include "core/config.h"
-#include "core/configPins.h"
-#include "core/serial_commands/cli.h"
-#include "core/startup_app.h"
+// Ensure critical macros are defined early
+#ifndef SAFE_STACK_BUFFER_SIZE
+#define SAFE_STACK_BUFFER_SIZE 4096
+#endif
+
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <ESP32Time.h>
 #include <FS.h>
 #include <LittleFS.h>
-extern FS &LittleFS;
+extern FS &LittleFS; // <-- DECLARAÇÃO CORRETA PARA LITTLEFS NATIVO
 #include <NTPClient.h>
+
+#include "core/config.h"
+#include "core/configPins.h"
+#include "core/serial_commands/cli.h"
+#include "core/startup_app.h"
 #include <SPI.h>
 #include <Timezone.h>
 #include <functional>
@@ -154,6 +160,14 @@ struct TouchPoint {
     }
 };
 
+// Structure for coordinate handling in display functions - moved to sd_functions.h to avoid redefinition
+// struct Opt_Coord {
+//     int x;
+//     int y;
+//     int width;
+//     int height;
+// };
+
 extern TouchPoint touchPoint;
 extern keyStroke KeyStroke;
 extern std::vector<Option> options;
@@ -243,7 +257,6 @@ uint32_t getComplementaryColor2(uint32_t color);
 void resetTftDisplay();
 void wakeUpScreen();
 void displayWarning(String msg, bool b);
-void displayError(String msg);
 extern inline bool check(volatile bool &btn) {
 
 #ifndef USE_TFT_eSPI_TOUCH

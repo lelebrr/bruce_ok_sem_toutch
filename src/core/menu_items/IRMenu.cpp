@@ -1,90 +1,67 @@
 #include "IRMenu.h"
 #include "core/display.h"
-#include "core/settings.h"
+#include "core/display_functions.h"
 #include "core/utils.h"
-#include "modules/ir/TV-B-Gone.h"
-#include "modules/ir/custom_ir.h"
-#include "modules/ir/ir_jammer.h"
-#include "modules/ir/ir_read.h"
+#include <globals.h>
 
 void IRMenu::optionsMenu() {
     options.clear();
-    options.emplace_back("TV-B-Gone", StartTvBGone);
-    options.emplace_back("Custom IR", otherIRcodes);
-    options.emplace_back("IR Read", [=]() { IrRead(); });
-    options.emplace_back("IR Jammer", startIrJammer); // Simple frequency-adjustable jammer
-    options.emplace_back("Config", [=]() { configMenu(); });
+    options.emplace_back("IR Learning", []() {
+        // TODO: Implement IR learning
+    });
+    options.emplace_back("IR Emission", []() {
+        // TODO: Implement IR emission
+    });
+    options.emplace_back("IR Database", []() {
+        // TODO: Implement IR database
+    });
     addOptionToMainMenu();
 
-    String txt = "Infrared";
-    txt += " Tx: " + String(bruceConfig.irTx) + " Rx: " + String(bruceConfig.irRx) +
-           " Rpts: " + String(bruceConfig.irTxRepeats);
-    loopOptions(options, MENU_TYPE_SUBMENU, txt.c_str());
+    loopOptions(options, MENU_TYPE_SUBMENU, "Infrared");
 }
 
-void IRMenu::configMenu() {
-    options.clear();
-    options.emplace_back("Ir TX Pin", lambdaHelper(gsetIrTxPin, '1'));
-    options.emplace_back("Ir RX Pin", lambdaHelper(gsetIrRxPin, '1'));
-    options.emplace_back("Ir TX Repeats", setIrTxRepeats);
-    options.emplace_back("Back", [=]() { optionsMenu(); });
-
-    loopOptions(options, MENU_TYPE_SUBMENU, "IR Config");
-}
 void IRMenu::drawIconImg() {
-    drawImg(
+    drawImgFromFS(
         *bruceConfig.themeFS(), bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ir), 0, imgCenterY, true
     );
 }
+
 void IRMenu::drawIcon(float scale) {
     clearIconArea();
-    int iconSize = scale * 60;
-    int radius = scale * 7;
-    int deltaRadius = scale * 10;
+    int iconSize = scale * 40;
 
-    if (iconSize % 2 != 0) iconSize++;
+    // IR LED representation
+    int centerX = iconCenterX;
+    int centerY = iconCenterY;
 
-    tft.fillRect(
-        iconCenterX - iconSize / 2, iconCenterY - iconSize / 2, iconSize / 6, iconSize, bruceConfig.priColor
-    );
-    tft.fillRect(
-        iconCenterX - iconSize / 3,
-        iconCenterY - iconSize / 3,
-        iconSize / 6,
-        2 * iconSize / 3,
-        bruceConfig.priColor
-    );
+    // LED body
+    tft.fillCircle(centerX, centerY, iconSize / 3, bruceConfig.priColor);
 
-    tft.drawCircle(iconCenterX - iconSize / 6, iconCenterY, radius, bruceConfig.priColor);
+    // LED lens
+    tft.fillCircle(centerX, centerY, iconSize / 6, bruceConfig.bgColor);
 
-    tft.drawArc(
-        iconCenterX - iconSize / 6,
-        iconCenterY,
-        2.5 * radius,
-        2 * radius,
-        220,
-        320,
-        bruceConfig.priColor,
-        bruceConfig.bgColor
-    );
-    tft.drawArc(
-        iconCenterX - iconSize / 6,
-        iconCenterY,
-        2.5 * radius + deltaRadius,
-        2 * radius + deltaRadius,
-        220,
-        320,
-        bruceConfig.priColor,
-        bruceConfig.bgColor
-    );
-    tft.drawArc(
-        iconCenterX - iconSize / 6,
-        iconCenterY,
-        2.5 * radius + 2 * deltaRadius,
-        2 * radius + 2 * deltaRadius,
-        220,
-        320,
-        bruceConfig.priColor,
-        bruceConfig.bgColor
-    );
+    // IR signal waves
+    for (int i = 0; i < 3; i++) {
+        tft.drawArc(
+            centerX,
+            centerY,
+            iconSize / 2 + i * 5,
+            iconSize / 3 + i * 3,
+            0,
+            360,
+            bruceConfig.priColor,
+            bruceConfig.bgColor
+        );
+    }
+
+    // IR beams
+    for (int i = 0; i < 5; i++) {
+        float angle = -30 + i * 15;
+        float x1 = centerX + cos(angle * PI / 180) * iconSize / 3;
+        float y1 = centerY + sin(angle * PI / 180) * iconSize / 3;
+        float x2 = centerX + cos(angle * PI / 180) * iconSize;
+        float y2 = centerY + sin(angle * PI / 180) * iconSize;
+
+        tft.drawLine(x1, y1, x2, y2, bruceConfig.priColor);
+    }
 }

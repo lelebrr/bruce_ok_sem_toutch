@@ -1,111 +1,57 @@
-
 #include "EthernetMenu.h"
-#if !defined(LITE_VERSION)
 #include "core/display.h"
-#include "core/settings.h"
+#include "core/display_functions.h"
 #include "core/utils.h"
-#include "modules/ethernet/ARPScanner.h"
-#include "modules/ethernet/DHCPStarvation.h"
-#include "modules/ethernet/EthernetHelper.h"
-#include "modules/ethernet/MACFlooding.h"
-
-void EthernetMenu::start_ethernet() {
-    eth = new EthernetHelper();
-    while (!eth->is_connected()) { delay(100); }
-}
+#include <globals.h>
 
 void EthernetMenu::optionsMenu() {
-    options = {
-        {"Scan Hosts",
-         [=]() {
-             start_ethernet();
-             run_arp_scanner();
-             eth->stop();
-         }},
-        {"DHCP Starvation",
-         [=]() {
-             start_ethernet();
-             DHCPStarvation();
-             eth->stop();
-         }},
-        {"MAC Flooding",
-         [=]() {
-             start_ethernet();
-             MACFlooding();
-             eth->stop();
-         }}
-    };
+    options.clear();
+    options.emplace_back("Ethernet Status", []() {
+        // TODO: Implement Ethernet status
+    });
+    options.emplace_back("Ethernet Settings", []() {
+        // TODO: Implement Ethernet settings
+    });
+    options.emplace_back("Network Diagnostics", []() {
+        // TODO: Implement network diagnostics
+    });
     addOptionToMainMenu();
-
-    delay(200);
 
     loopOptions(options, MENU_TYPE_SUBMENU, "Ethernet");
 }
 
 void EthernetMenu::drawIconImg() {
-    drawImg(
+    drawImgFromFS(
         *bruceConfig.themeFS(), bruceConfig.getThemeItemImg(bruceConfig.theme.paths.rfid), 0, imgCenterY, true
     );
 }
+
 void EthernetMenu::drawIcon(float scale) {
     clearIconArea();
+    int iconSize = scale * 40;
 
-    int iconW = scale * 30;
-    int iconH = scale * 40;
+    // Ethernet port representation
+    int centerX = iconCenterX;
+    int centerY = iconCenterY;
 
-    int Y = iconCenterY - 25;
-
-    int smallerH = scale * 16;
-
-    int starterX = iconCenterX - iconW; // X of the first side
-    int finalX = iconCenterX + iconW;
-
-    int lineWidth = 2;
-
-    // Draw the main socket structure
-    /*
-    |-----|
-    |     |
-    |     |
-    */
-    tft.drawRect(starterX, Y, lineWidth, iconH, bruceConfig.priColor);
-
-    tft.drawRect(finalX, Y, lineWidth, iconH, bruceConfig.priColor);
-
-    tft.drawRect(starterX, Y, iconW * 2, lineWidth, bruceConfig.priColor);
-
-    // Draw the shorter side to close the first part of socket
-    /*
-    |-----|
-    |     |
-    |-   -|
-    */
-    tft.drawRect(starterX, Y + iconH, smallerH, lineWidth, bruceConfig.priColor);
-
-    tft.drawRect(finalX - smallerH + lineWidth, Y + iconH, smallerH, lineWidth, bruceConfig.priColor);
-
-    // Draw the final enclosure
-    /*
-    |------|
-    |      |
-    |-    -|
-      |  |
-    */
-    tft.drawRect(starterX + smallerH, Y + iconH, lineWidth, smallerH, bruceConfig.priColor);
-    tft.drawRect(finalX - smallerH + lineWidth, Y + iconH, lineWidth, smallerH, bruceConfig.priColor);
-
-    // Draw the four cable pin at a distance of 15 pixel
-    for (size_t i = 0; i < 4; i++) {
-        tft.drawRect(starterX + 15 + (i * 15), Y, lineWidth, 16, bruceConfig.priColor);
-    }
-
-    // Close the socket calculating width of this side removing from total width, the size of the smaller size
-    tft.drawRect(
-        starterX + smallerH,
-        Y + iconH + smallerH,
-        (iconW * 2) - (smallerH * 2) + 4,
-        lineWidth,
+    // Port body
+    tft.fillRoundRect(
+        centerX - iconSize / 3,
+        centerY - iconSize / 4,
+        iconSize * 2 / 3,
+        iconSize / 2,
+        iconSize / 8,
         bruceConfig.priColor
     );
+
+    // Port connector
+    tft.fillRect(
+        centerX - iconSize / 4, centerY - iconSize / 6, iconSize / 2, iconSize / 12, bruceConfig.bgColor
+    );
+
+    // Port pins
+    for (int i = 0; i < 8; i++) {
+        int x = centerX - iconSize / 4 + (i * iconSize / 14);
+        tft.fillCircle(x, centerY, 2, bruceConfig.priColor);
+    }
 }
-#endif

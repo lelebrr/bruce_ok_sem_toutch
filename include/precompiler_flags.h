@@ -3,25 +3,27 @@
 /*     This file has the purpose to verify the existence of some default flags      */
 /*                Only PreCompiler code must be set in this file                    */
 
-#include <pins_arduino.h>
-
+// Basic pin definitions needed before including pins_arduino.h
 #ifndef GROVE_SDA           // Pin to be used in I2C communications
   #define GROVE_SDA -1
 #endif
 #ifndef GROVE_SCL           // Pin to be used in I2C communications
   #define GROVE_SCL -1
 #endif
-#ifndef RXLED               // Default RX Infrared LED
-  #define RXLED GROVE_SCL
-#endif
 #ifndef LED                 // Default TC Infrared Led
   #define LED GROVE_SDA
 #endif
-#ifndef LED_ON              // Infrared LED On state
-  #define LED_ON 1
+#ifndef LED_OFF
+  #define LED_OFF LOW
 #endif
-#ifndef LED_OFF             // Infrared LED Off state
-  #define LED_OFF 0
+#ifndef ROTATION
+  #define ROTATION 1
+#endif
+#ifndef	LH
+  #define LH 8
+#endif
+#ifndef	LW
+  #define LW 6
 #endif
 #ifndef FP                  // Small Font -> Font Pequena
   #define FP 1
@@ -32,9 +34,11 @@
 #ifndef FG                  // LArge Font -> Fonte Grande
   #define FG 3
 #endif
-#ifndef ROTATION
-  #define ROTATION 1
+#ifndef SAFE_STACK_BUFFER_SIZE
+  #define SAFE_STACK_BUFFER_SIZE 4096
 #endif
+
+#include <pins_arduino.h>
 #ifndef	TFT_WIDTH
   #define TFT_WIDTH 240
 #endif

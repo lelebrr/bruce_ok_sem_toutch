@@ -16,7 +16,9 @@ private:
 #define MAC_ADDRESS_LENGTH 6
 #define IPV4_LENGTH 4
 #define ETHERNET_PROTOCOL_IPV4 0x0800
+#ifndef PACKET_LENGTH
 #define PACKET_LENGTH 54 // ETH header + IPV4 header + some random data
+#endif
 
     ip_hdr ipv4_pkt;
     eth_hdr eth_header;

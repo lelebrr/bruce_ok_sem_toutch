@@ -253,7 +253,7 @@ void boot_screen_anim() {
             if (boot_img > 0 && !drawn) {
                 tft.fillScreen(bruceConfig.bgColor);
                 if (boot_img == 5) {
-                    drawImg(
+                    drawImgFromFS(
                         *bruceConfig.themeFS(),
                         bruceConfig.getThemeItemImg(bruceConfig.theme.paths.boot_img),
                         0,

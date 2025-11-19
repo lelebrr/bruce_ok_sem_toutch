@@ -41,9 +41,11 @@ void BleMenu::optionsMenu() {
 }
 void BleMenu::drawIconImg() {
     if (bruceConfig.theme.fs) {
-        drawImg((fs::FS &)SD, bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ble), 0, imgCenterY, true);
+        drawImgFromFS(SD, bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ble), 0, imgCenterY, true);
     } else {
-        drawImg(LittleFS, bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ble), 0, imgCenterY, true);
+        drawImgFromFS(
+            LittleFS, bruceConfig.getThemeItemImg(bruceConfig.theme.paths.ble), 0, imgCenterY, true
+        );
     }
 }
 
@@ -105,44 +107,6 @@ void BleMenu::drawIcon(float scale) {
         bruceConfig.priColor,
         bruceConfig.priColor
     );
-
-    // tft.fillTriangle(
-    //     iconCenterX + lineWidth / 2,
-    //     iconCenterY - iconH / 4,
-    //     iconCenterX - iconW / 2,
-    //     iconCenterY + lineWidth / 2,
-    //     iconCenterX - iconW / 2,
-    //     iconCenterY - iconH / 2 - lineWidth / 2,
-    //     bruceConfig.priColor
-    // );
-    // tft.fillTriangle(
-    //     iconCenterX + lineWidth / 2,
-    //     iconCenterY + iconH / 4,
-    //     iconCenterX - iconW / 2,
-    //     iconCenterY - lineWidth / 2,
-    //     iconCenterX - iconW / 2,
-    //     iconCenterY + iconH / 2 + lineWidth / 2,
-    //     bruceConfig.priColor
-    // );
-
-    // tft.fillTriangle(
-    //     iconCenterX - lineWidth / 2,
-    //     iconCenterY - iconH / 4,
-    //     iconCenterX - iconW / 2 + lineWidth / 2,
-    //     iconCenterY - lineWidth,
-    //     iconCenterX - iconW / 2 + lineWidth / 2,
-    //     iconCenterY - iconH / 2 + lineWidth,
-    //     bruceConfig.bgColor
-    // );
-    // tft.fillTriangle(
-    //     iconCenterX - lineWidth / 2,
-    //     iconCenterY + iconH / 4,
-    //     iconCenterX - iconW / 2 + lineWidth / 2,
-    //     iconCenterY + lineWidth,
-    //     iconCenterX - iconW / 2 + lineWidth / 2,
-    //     iconCenterY + iconH / 2 - lineWidth,
-    //     bruceConfig.bgColor
-    // );
 
     tft.drawArc(
         iconCenterX,

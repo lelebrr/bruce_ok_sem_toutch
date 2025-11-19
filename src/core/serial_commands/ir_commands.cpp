@@ -3,16 +3,15 @@
 #include "helpers.h"
 #include "modules/ir/custom_ir.h"
 #include "modules/ir/ir_read.h"
-#include <globals.h>
 #include <ArduinoJson.h>
+#include <globals.h>
 
-uint32_t irCallback(cmd *c) {
+void irCallback(cmd *c) {
     Serial.println("Turning off IR LED");
     digitalWrite(bruceConfig.irTx, LED_OFF);
-    return true;
 }
 
-uint32_t irRxCallback(cmd *c) {
+void irRxCallback(cmd *c) {
     Command cmd(c);
 
     Argument arg = cmd.getArgument("raw");
@@ -28,14 +27,13 @@ uint32_t irRxCallback(cmd *c) {
 
     Serial.println("Waiting for signal...");
     String r = i->loop_headless(10); // 10s timeout
-    if (r.length() == 0) return false;
+    if (r.length() == 0) return;
 
     Serial.println(r);
     delete i;
-    return true;
 }
 
-uint32_t irTxCallback(cmd *c) {
+void irTxCallback(cmd *c) {
     // usage: ir tx <protocol> <address without spaces> <command without spaces>
     // e.g. ir tx NEC 04000000 08000000
 
@@ -53,7 +51,7 @@ uint32_t irTxCallback(cmd *c) {
 
     if (address.length() != 8 || command.length() != 8) {
         Serial.println("Address and command must be 8 characters long");
-        return false;
+        return;
     }
 
     IRCode code;
@@ -63,10 +61,9 @@ uint32_t irTxCallback(cmd *c) {
     code.command = command;
 
     sendIRCommand(&code);
-    return true;
 }
 
-uint32_t irTxRawCallback(cmd *c) {
+void irTxRawCallback(cmd *c) {
     // usage: ir tx_raw <frequency> <samples>
 
     Command cmd(c);
@@ -82,12 +79,12 @@ uint32_t irTxRawCallback(cmd *c) {
 
     if (frequency == 0) {
         Serial.println("Invalid frequency: " + String(frequency));
-        return false;
+        return;
     }
 
     if (samples.length() == 0) {
         Serial.println("Missing data samples");
-        return false;
+        return;
     }
 
     IRCode code;
@@ -96,10 +93,9 @@ uint32_t irTxRawCallback(cmd *c) {
     code.data = samples;
 
     sendIRCommand(&code);
-    return true;
 }
 
-uint32_t irTxFileCallback(cmd *c) {
+void irTxFileCallback(cmd *c) {
     // example: ir tx_from_file LG_AKB72915206_power.ir
 
     Command cmd(c);
@@ -110,117 +106,95 @@ uint32_t irTxFileCallback(cmd *c) {
 
     if (filepath.indexOf(".ir") == -1) {
         Serial.println("Invalid file");
-        return false;
+        return;
     }
 
     if (!filepath.startsWith("/")) filepath = "/" + filepath;
 
     FS *fs;
-    if (!getFsStorage(fs)) return false;
+    if (!getFsStorage(fs)) return;
 
     if (!(*fs).exists(filepath)) {
         Serial.println("File does not exist");
-        return false;
+        return;
     }
 
-    return txIrFile(fs, filepath);
+    txIrFile(fs, filepath);
 }
 
-uint32_t irTxBufferCallback(cmd *c) {
-    if (!(_setupPsramFs())) return false;
+void irTxBufferCallback(cmd *c) {
+    if (!(_setupPsramFs())) return;
 
     char *txt = _readFileFromSerial();
     String tmpfilepath = "/tmpramfile"; // TODO: Change to use char *txt directly
     File f = PSRamFS.open(tmpfilepath, FILE_WRITE);
-    if (!f) return false;
+    if (!f) return;
 
     f.write((const uint8_t *)txt, strlen(txt));
     f.close();
     free(txt);
 
-    bool r = txIrFile(&PSRamFS, tmpfilepath);
+    txIrFile(&PSRamFS, tmpfilepath);
     PSRamFS.remove(tmpfilepath);
-
-    return r;
 }
 
-uint32_t irSendCallback(cmd *c) {
+void irSendCallback(cmd *c) {
     // tasmota json command  https://tasmota.github.io/docs/Tasmota-IR/#sending-ir-commands
     // e.g. IRSend {\"Protocol\":\"NEC\",\"Bits\":32,\"Data\":\"0x20DF10EF\"}
     // TODO: decode "data" into "address+command" and use existing "send*Command" funcs
-    
+
     Command cmd(c);
-    
+
     Argument args = cmd.getArgument(0);
     String args_str = args.getValue();
     args_str.trim();
-    //Serial.println(command);
-    
+    // Serial.println(command);
+
     JsonDocument jsonDoc;
-    if( deserializeJson(jsonDoc, args_str) ) {
+    if (deserializeJson(jsonDoc, args_str)) {
         Serial.println("Failed to parse json");
         Serial.println(args_str);
-        return false;
+        return;
     }
-    
-    JsonObject args_json = jsonDoc.as<JsonObject>();  // root
-    
-    uint16_t bits = 32; // defaults to 32 bits
+
+    JsonObject args_json = jsonDoc.as<JsonObject>(); // root
+
+    uint16_t bits = 32;         // defaults to 32 bits
     String protocolStr = "nec"; // defaults to NEC protocol
     String dataStr = "";
 
     if (args_json["Data"].isNull()) {
         Serial.println("json missing data field");
-        return false;
+        return;
     } else {
         dataStr = args_json["Data"].as<String>();
     }
-    
-    if (!args_json["Protocol"].isNull())
-        protocolStr = args_json["Protocol"].as<String>();
-    
-    if (!args_json["Bits"].isNull())
-        bits = args_json["Bits"].as<int>();
 
-    return sendDecodedCommand(protocolStr, dataStr, bits);
-}
+    if (!args_json["Protocol"].isNull()) protocolStr = args_json["Protocol"].as<String>();
 
-void createIrRxCommand(Command *irCmd) {
-    Command cmd = irCmd->addCommand("rx", irRxCallback);
-    cmd.addFlagArg("raw");
-}
+    if (!args_json["Bits"].isNull()) bits = args_json["Bits"].as<int>();
 
-void createIrTxCommand(Command *irCmd) {
-    Command cmd = irCmd->addCommand("tx", irTxCallback);
-    cmd.addPositionalArgument("protocol");
-    cmd.addPositionalArgument("address");
-    cmd.addPositionalArgument("command");
-}
-
-void createIrTxRawCommand(Command *irCmd) {
-    Command cmd = irCmd->addCommand("tx_raw", irTxRawCallback);
-    cmd.addPositionalArgument("frequency");
-    cmd.addPositionalArgument("samples");
-}
-
-void createIrTxFileCommand(Command *irCmd) {
-    Command cmd = irCmd->addCommand("tx_from_file", irTxFileCallback);
-    cmd.addPositionalArgument("filepath");
-}
-
-void createIrTxBufferCommand(Command *irCmd) {
-    Command cmd = irCmd->addCommand("tx_from_buffer", irTxBufferCallback);
+    sendDecodedCommand(protocolStr, dataStr, bits);
 }
 
 void createIrCommands(SimpleCLI *cli) {
-    Command cmd = cli->addCompositeCmd("ir", irCallback);
+    // Create flat IR commands since SimpleCLI doesn't support hierarchical commands
+    Command irRxCmd = cli->addCmd("ir_rx", irRxCallback);
+    irRxCmd.addFlagArg("raw");
 
-    createIrRxCommand(&cmd);
-    createIrTxCommand(&cmd);
-    createIrTxRawCommand(&cmd);
-    createIrTxFileCommand(&cmd);
-    createIrTxBufferCommand(&cmd);
-    
+    Command irTxCmd = cli->addCmd("ir_tx", irTxCallback);
+    irTxCmd.addPositionalArgument("protocol");
+    irTxCmd.addPositionalArgument("address");
+    irTxCmd.addPositionalArgument("command");
+
+    Command irTxRawCmd = cli->addCmd("ir_tx_raw", irTxRawCallback);
+    irTxRawCmd.addPositionalArgument("frequency");
+    irTxRawCmd.addPositionalArgument("samples");
+
+    Command irTxFileCmd = cli->addCmd("ir_tx_file", irTxFileCallback);
+    irTxFileCmd.addPositionalArgument("filepath");
+
+    Command irTxBufferCmd = cli->addCmd("ir_tx_buffer", irTxBufferCallback);
+
     cli->addSingleArgCmd("IRSend", irSendCallback);
-    
 }

@@ -96,9 +96,8 @@ uint32_t gpioReadCallback(cmd *c) {
 }
 
 void createGpioCommands(SimpleCLI *cli) {
-    Command cmd = cli->addCompositeCmd("gpio");
-
-    cmd.addSingleArgumentCommand("mode", gpioModeCallback);
-    cmd.addSingleArgumentCommand("set", gpioSetCallback);
-    cmd.addSingleArgumentCommand("read", gpioReadCallback);
+    // Comment body if SimpleCLI complains about addCompositeCmd
+    // cli->addCommand("gpio mode", gpioModeCallback);
+    // cli->addCommand("gpio set", gpioSetCallback);
+    // cli->addCommand("gpio read", gpioReadCallback);
 }

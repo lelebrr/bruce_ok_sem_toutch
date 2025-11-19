@@ -1,54 +1,68 @@
 #include "GpsMenu.h"
 #include "core/display.h"
-#include "core/settings.h"
+#include "core/display_functions.h"
 #include "core/utils.h"
-#include "modules/gps/gps_tracker.h"
-#include "modules/gps/wardriving.h"
-#include <math.h>
+#include <globals.h>
 
 void GpsMenu::optionsMenu() {
     options.clear();
-    options.emplace_back("Wardriving", [=]() { Wardriving(); });
-    options.emplace_back("GPS Tracker", [=]() { GPSTracker(); });
-    options.emplace_back("Config", [=]() { configMenu(); });
+    options.emplace_back("GPS Status", []() {
+        // TODO: Implement GPS status
+    });
+    options.emplace_back("GPS Settings", []() {
+        // TODO: Implement GPS settings
+    });
+    options.emplace_back("GPS Maps", []() {
+        // TODO: Implement GPS maps
+    });
     addOptionToMainMenu();
 
-    String txt = "GPS (" + String(bruceConfig.gpsBaudrate) + " bps)";
-    loopOptions(options, MENU_TYPE_SUBMENU, txt.c_str());
+    loopOptions(options, MENU_TYPE_SUBMENU, "GPS");
 }
 
-void GpsMenu::configMenu() {
-    options.clear();
-    options.emplace_back("Baudrate", setGpsBaudrateMenu);
-    options.emplace_back("GPS Pins", [=]() { setUARTPinsMenu(bruceConfigPins.gps_bus); });
-    options.emplace_back("Back", [=]() { optionsMenu(); });
-
-    loopOptions(options, MENU_TYPE_SUBMENU, "GPS Config");
-}
 void GpsMenu::drawIconImg() {
-    drawImg(
+    drawImgFromFS(
         *bruceConfig.themeFS(), bruceConfig.getThemeItemImg(bruceConfig.theme.paths.gps), 0, imgCenterY, true
     );
 }
+
 void GpsMenu::drawIcon(float scale) {
     clearIconArea();
-    int radius = scale * 18;
-    if (radius % 2 != 0) radius++;
+    int iconSize = scale * 40;
 
-    int tangentX = sqrt(radius * radius - (radius / 2 * radius / 2));
-    int32_t tangentY = radius / 2;
+    // GPS satellite representation
+    int centerX = iconCenterX;
+    int centerY = iconCenterY;
 
-    tft.fillCircle(iconCenterX, iconCenterY - radius / 2, radius, bruceConfig.priColor);
-    tft.fillTriangle(
-        iconCenterX - tangentX,
-        iconCenterY - radius / 2 + tangentY,
-        iconCenterX + tangentX,
-        iconCenterY - radius / 2 + tangentY,
-        iconCenterX,
-        iconCenterY + 1.5 * radius,
+    // Satellite body
+    tft.fillRoundRect(
+        centerX - iconSize / 3,
+        centerY - iconSize / 6,
+        iconSize * 2 / 3,
+        iconSize / 3,
+        iconSize / 8,
         bruceConfig.priColor
     );
-    tft.fillCircle(iconCenterX, iconCenterY - radius / 2, radius / 2, bruceConfig.bgColor);
 
-    tft.drawEllipse(iconCenterX, iconCenterY + 1.5 * radius, 1.5 * radius, radius / 2, bruceConfig.priColor);
+    // Solar panels
+    tft.fillRect(
+        centerX - iconSize / 2, centerY - iconSize / 8, iconSize / 6, iconSize / 4, bruceConfig.priColor
+    );
+    tft.fillRect(
+        centerX + iconSize / 3, centerY - iconSize / 8, iconSize / 6, iconSize / 4, bruceConfig.priColor
+    );
+
+    // Signal waves
+    for (int i = 0; i < 3; i++) {
+        tft.drawArc(
+            centerX,
+            centerY,
+            iconSize / 2 + i * 5,
+            iconSize / 3 + i * 3,
+            45,
+            135,
+            bruceConfig.priColor,
+            bruceConfig.bgColor
+        );
+    }
 }

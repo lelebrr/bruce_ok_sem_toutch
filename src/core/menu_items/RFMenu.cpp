@@ -11,6 +11,12 @@
 #include "modules/rf/rf_spectrum.h"
 #include "modules/rf/rf_waterfall.h"
 
+// Declarações de funções externas necessárias
+extern void gsetRfTxPin();
+extern void gsetRfRxPin();
+extern void setRFModuleMenu();
+extern void setRFFreqMenu();
+
 void RFMenu::optionsMenu() {
     options = {
         {"Scan/copy",       [=]() { RFScan(); }       },
@@ -34,23 +40,27 @@ void RFMenu::optionsMenu() {
     if (bruceConfig.rfModule == CC1101_SPI_MODULE) txt += " (CC1101)"; // Indicates if CC1101 is connected
     else txt += " Tx: " + String(bruceConfig.rfTx) + " Rx: " + String(bruceConfig.rfRx);
 
-    loopOptions(options, MENU_TYPE_SUBMENU, txt.c_str());
+    loopOptions(options, MENU_TYPE_SUBMENU);
 }
 
 void RFMenu::configMenu() {
     options = {
-        {"RF TX Pin", lambdaHelper(gsetRfTxPin, true)},
-        {"RF RX Pin", lambdaHelper(gsetRfRxPin, true)},
-        {"RF Module", setRFModuleMenu},
-        {"RF Frequency", setRFFreqMenu},
-        {"Back", [=]() { optionsMenu(); }},
+        {"RF TX Pin",    [=]() { gsetRfTxPin(); }},
+        {"RF RX Pin",    [=]() { gsetRfRxPin(); }},
+        {"RF Module",    setRFModuleMenu         },
+        {"RF Frequency", setRFFreqMenu           },
+        {"Back",         [=]() { optionsMenu(); }},
     };
 
-    loopOptions(options, MENU_TYPE_SUBMENU, "RF Config");
+    loopOptions(options, MENU_TYPE_SUBMENU);
 }
 void RFMenu::drawIconImg() {
-    drawImg(
-        *bruceConfig.themeFS(), bruceConfig.getThemeItemImg(bruceConfig.theme.paths.rf), 0, imgCenterY, true
+    drawImgFromFS(
+        (fs::FS &)(*bruceConfig.themeFS()),
+        bruceConfig.getThemeItemImg(bruceConfig.theme.paths.rf),
+        0,
+        imgCenterY,
+        true
     );
 }
 void RFMenu::drawIcon(float scale) {

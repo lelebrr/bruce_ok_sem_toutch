@@ -1,4 +1,3 @@
-
 #include "ScriptsMenu.h"
 #include "core/display.h"
 #include "core/settings.h"
@@ -43,7 +42,7 @@ std::vector<Option> getScriptsOptionsList() {
         entry_title = entry_title.substring(0, entry_title.lastIndexOf(".")); // remove the extension
         opt.push_back({entry_title.c_str(), [=]() { run_bjs_script_headless(*fs, file2.path()); }});
     }
-    
+
     file2.close();
     root.close();
 
@@ -56,11 +55,11 @@ void ScriptsMenu::optionsMenu() {
     options.push_back({"Load...", run_bjs_script});
     addOptionToMainMenu();
 
-    loopOptions(options, MENU_TYPE_SUBMENU, "Scripts");
+    loopOptions(options, MENU_TYPE_SUBMENU);
 }
 void ScriptsMenu::drawIconImg() {
-    drawImg(
-        *bruceConfig.themeFS(),
+    drawImgFromFS(
+        (fs::FS &)(*(bruceConfig.themeFS())),
         bruceConfig.getThemeItemImg(bruceConfig.theme.paths.interpreter),
         0,
         imgCenterY,

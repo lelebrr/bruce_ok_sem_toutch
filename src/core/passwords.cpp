@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <MD5Builder.h>
 
+#include "core/display_functions.h" // FIX: Include para displayError
 #include "mykeyboard.h"
 #include "passwords.h"
 #include "sd_functions.h"

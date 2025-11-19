@@ -80,7 +80,7 @@ void WifiMenu::optionsMenu() {
                            snifferOptions.push_back({"Probe Sniffer", karma_setup});
                            snifferOptions.push_back({"Back", [=]() { optionsMenu(); }});
 
-                           loopOptions(snifferOptions, MENU_TYPE_SUBMENU, "Sniffers");
+                           loopOptions(snifferOptions, MENU_TYPE_SUBMENU);
                        }});
     options.push_back({"Scan Hosts", [=]() {
                            bool doScan = true;
@@ -102,7 +102,7 @@ void WifiMenu::optionsMenu() {
     options.push_back({"Config", [=]() { configMenu(); }});
     addOptionToMainMenu();
 
-    loopOptions(options, MENU_TYPE_SUBMENU, "WiFi");
+    loopOptions(options, MENU_TYPE_SUBMENU);
 }
 
 void WifiMenu::configMenu() {
@@ -112,11 +112,15 @@ void WifiMenu::configMenu() {
     options.push_back({"Change MAC", wifiMACMenu});
     options.push_back({"Back", [=]() { optionsMenu(); }});
 
-    loopOptions(options, MENU_TYPE_SUBMENU, "WiFi Config");
+    loopOptions(options, MENU_TYPE_SUBMENU);
 }
 void WifiMenu::drawIconImg() {
-    drawImg(
-        *bruceConfig.themeFS(), bruceConfig.getThemeItemImg(bruceConfig.theme.paths.wifi), 0, imgCenterY, true
+    drawImgFromFS(
+        (fs::FS &)(*(bruceConfig.themeFS())),
+        bruceConfig.getThemeItemImg(bruceConfig.theme.paths.wifi),
+        0,
+        imgCenterY,
+        true
     );
 }
 void WifiMenu::drawIcon(float scale) {

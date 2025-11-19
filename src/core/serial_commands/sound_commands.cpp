@@ -3,7 +3,7 @@
 #include "modules/others/audio.h"
 #include <globals.h>
 
-uint32_t toneCallback(cmd *c) {
+void toneCallback(cmd *c) {
     Command cmd(c);
 
     Argument freqArg = cmd.getArgument("frequency");
@@ -26,13 +26,12 @@ uint32_t toneCallback(cmd *c) {
     _tone(frequency, duration);
 
     bruceConfig.soundEnabled = soundEnabled;
-    return true;
 }
 
-uint32_t playCallback(cmd *c) {
+void playCallback(cmd *c) {
     // RTTTL player
     // music_player
-    // mario:d=4,o=5,b=100:16e6,16e6,32p,8e6,16c6,8e6,8g6,8p,8g,8p,8c6,16p,8g,16p,8e,16p,8a,8b,16a#,8a,16g.,16e6,16g6,8a6,16f6,8g6,8e6,16c6,16d6,8b,16p,8c6,16p,8g,16p,8e,16p,8a,8b,16a#,8a,16g.,16e6,16g6,8a6,16f6,8g6,8e6,16c6,16d6,8b,8p,16g6,16f#6,16f6,16d#6,16p,16e6,16p,16g#,16a,16c6,16p,16a,16c6,16d6,8p,16g6,16f#6,16f6,16d#6,16p,16e6,16p,16c7,16p,16c7,16c7,p,16g6,16f#6,16f6,16d#6,16p,16e6,16p,16g#,16a,16c6,16p,16a,16c6,16d6,8p,16d#6,8p,16d6,8p,16c6
+    // mario:d=4,o=5,b=100:16e6,16e6,32p,8e6,16c6,8e6,8g6,8p,8g,8p,8c6,16p,8g,16p,8e,16p,8a,8b,16a#,8a,16g.,16e6,16g6,8a6,16f6,8g6,8e6,16c6,16d6,8b,16p,8c6,16p,8g,16p,8e,16p,8a,8b,16a#,8a,16g.,16e6,16g6,8a6,16f6,8g6,8e6,16c6,16d6,8b,8p,16g6,16f#6,16f6,16d#6,16p,16e6,16p,16g#,16a,16c6,16p,16a,16c6,16d6,8p,16d#6,8p,16d6,8p,16c6
 
     // File player
     // music_player boot.wav
@@ -46,27 +45,29 @@ uint32_t playCallback(cmd *c) {
     bool soundEnabled = bruceConfig.soundEnabled;
     bruceConfig.soundEnabled = true;
 
-    if (song.indexOf(":") != -1) return playAudioRTTTLString(song);
+    if (song.indexOf(":") != -1) {
+        playAudioRTTTLString(song);
+        return;
+    }
 
     if (song.indexOf(".") != -1) {
         if (!song.startsWith("/")) song = "/" + song;
 
         FS *fs;
-        if (!getFsStorage(fs)) return false;
+        if (!getFsStorage(fs)) return;
 
         if (!(*fs).exists(song)) {
             Serial.println("Song file does not exist");
-            return false;
+            return;
         }
 
-        return playAudioFile(fs, song);
+        playAudioFile(fs, song);
     }
 
     bruceConfig.soundEnabled = soundEnabled;
-    return false;
 }
 
-uint32_t ttsCallback(cmd *c) {
+void ttsCallback(cmd *c) {
     // tts hello world
 
     Command cmd(c);
@@ -81,7 +82,6 @@ uint32_t ttsCallback(cmd *c) {
     bool r = tts(text);
 
     bruceConfig.soundEnabled = soundEnabled;
-    return r;
 }
 
 void createSoundCommands(SimpleCLI *cli) {

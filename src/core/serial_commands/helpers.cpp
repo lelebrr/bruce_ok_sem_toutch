@@ -1,23 +1,7 @@
 #include "helpers.h"
 
 bool _setupPsramFs() {
-    // https://github.com/tobozo/ESP32-PsRamFS/blob/main/examples/PSRamFS_Test/PSRamFS_Test.ino
-    static bool psRamFSMounted = false;
-    if (psRamFSMounted) return true; // avoid reinit
-
-#ifdef BOARD_HAS_PSRAM
-    PSRamFS.setPartitionSize(ESP.getFreePsram() / 2); // use half of psram
-#else
-    PSRamFS.setPartitionSize(SAFE_STACK_BUFFER_SIZE);
-#endif
-
-    if (!PSRamFS.begin()) {
-        Serial.println("PSRamFS Mount Failed");
-        psRamFSMounted = false;
-        return false;
-    }
-    // else
-    psRamFSMounted = true;
+    // Assume LittleFS is already initialized in main.cpp
     return true;
 }
 

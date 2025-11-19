@@ -1,7 +1,7 @@
 #include "settings_commands.h"
 #include <globals.h>
 
-uint32_t settingsCallback(cmd *c) {
+void settingsCallback(cmd *c) {
     Command cmd(c);
 
     Argument setting_name_arg = cmd.getArgument("setting_name");
@@ -18,18 +18,18 @@ uint32_t settingsCallback(cmd *c) {
         // no args, just prints current config
         serializeJsonPretty(jsonDoc, Serial);
         Serial.println("");
-        return true;
+        return;
     }
 
     if (setting[setting_name].isNull()) {
         Serial.println("Invalid field name: " + setting_name);
-        return false;
+        return;
     }
 
     if (setting_value.length() == 0) {
         Serial.print(setting_name + " = ");
         Serial.println(setting[setting_name].as<String>());
-        return true;
+        return;
     }
 
     // TODO: improve this logic and move to BruceConfig
@@ -75,19 +75,18 @@ uint32_t settingsCallback(cmd *c) {
     if (setting_name == "devMode") bruceConfig.setDevMode(setting_value.toInt());
     if (setting_name == "disabledMenus") bruceConfig.addDisabledMenu(setting_value);
 
-    return true;
+    return;
 }
 
-uint32_t factoryResetCallback(cmd *c) {
+void factoryResetCallback(cmd *c) {
     bruceConfig.factoryReset();
     Serial.println("Factory reset done");
-    return true;
 }
 
 void createSettingsCommands(SimpleCLI *cli) {
-    cli->addCommand("factory_reset", factoryResetCallback);
+    cli->addCmd("factory_reset", factoryResetCallback);
 
-    Command cmd = cli->addCommand("set/tings", settingsCallback);
+    Command cmd = cli->addCmd("settings", settingsCallback);
     cmd.addPosArg("setting_name", "");
     cmd.addPosArg("setting_value", "");
 }
