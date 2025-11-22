@@ -1,7 +1,5 @@
 #include "theme.h"
 #include "display.h"
-#include "display_functions.h"
-#include <globals.h>
 
 struct ThemeEntry {
     const char *key;

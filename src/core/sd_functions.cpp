@@ -1,6 +1,5 @@
 #include "sd_functions.h"
 #include "display_functions.h" // using displayRedStripe as error msg
-#include "input_state.h"
 #include "modules/badusb_ble/ducky_typer.h"
 #include "modules/bjs_interpreter/interpreter.h"
 #include "modules/gps/wigle.h"
@@ -547,7 +546,7 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
 
 #ifdef HAS_KEYBOARD
         char pressed_letter = checkLetterShortcutPress();
-        if (check(navState.last_action == KeyAction::Escape)) goto BACK_FOLDER;
+        if (check(EscPress)) goto BACK_FOLDER;
 
         // check letter shortcuts
         if (pressed_letter > 0) {
@@ -567,34 +566,33 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
             }
         }
 #elif defined(T_EMBED) || defined(HAS_TOUCH) || !defined(HAS_SCREEN)
-        auto& navState = InputManager::getInstance().state;
-        if (check(navState.last_action == KeyAction::Escape)) goto BACK_FOLDER;
+        if (check(EscPress)) goto BACK_FOLDER;
     BACK_FOLDER:
 #endif
 
-        if (check(navState.last_action == KeyAction::Prev) || check(navState.last_action == KeyAction::Up)) {
+        if (check(PrevPress) || check(UpPress)) {
             if (index == 0) index = maxFiles;
             else if (index > 0) index--;
             redraw = true;
         }
-        if (check(navState.last_action == KeyAction::Next) || check(navState.last_action == KeyAction::Down)) {
+        if (check(NextPress) || check(DownPress)) {
             if (index == maxFiles) index = 0;
             else index++;
             redraw = true;
         }
-        if (check(navState.last_action == KeyAction::NextPage)) {
+        if (check(NextPagePress)) {
             index += PAGE_JUMP_SIZE;
             if (index > maxFiles) index = maxFiles - 1;
             redraw = true;
             continue;
         }
-        if (check(navState.last_action == KeyAction::PrevPage)) {
+        if (check(PrevPagePress)) {
             index -= PAGE_JUMP_SIZE;
             if (index < 0) index = 0;
             redraw = true;
             continue;
         }
-        if (navState.last_action == KeyAction::LongPress || navState.last_action == KeyAction::Select) {
+        if (LongPress || SelPress) {
             if (!LongPress) {
                 LongPress = true;
                 LongPressTmp = millis();
@@ -675,7 +673,7 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                                      const_cast<FS &>(*bruceConfig.themeFS()), filepath, 0, 0, true, -1
                                  );
                                  delay(750);
-                                 while (!check(navState.any_key_pressed)) vTaskDelay(10 / portTICK_PERIOD_MS);
+                                 while (!check(AnyKeyPress)) vTaskDelay(10 / portTICK_PERIOD_MS);
                              }}
                         );
                     if (filepath.endsWith(".ir"))
@@ -754,7 +752,7 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                     if (isAudioFile(filepath))
                         options.insert(options.begin(), {"Play Audio", [&]() {
                                                              delay(200);
-                                                             Serial.println(check(navState.any_key_pressed));
+                                                             Serial.println(check(AnyKeyPress));
                                                              delay(200);
                                                              playAudioFile(const_cast<FS &>(fs), filepath);
                                                          }});
@@ -788,10 +786,9 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                     redraw = true;
                 }
             }
-            else {
-                fileList.clear();
-                return result;
-            }
+            if (fileList[index].operation == true && Folder == "/") break; // exit if pressing back on root
+        }
+        if (check(EscPress)) {
         BACK_FOLDER:
             if (Folder == "/") break;
             Folder = Folder.substring(0, Folder.lastIndexOf('/'));
@@ -884,8 +881,7 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
         file.close();
         delay(100);
 
-        auto& navState = InputManager::getInstance().state;
-        while (!check(navState.last_action == KeyAction::Escape) && !check(navState.last_action == KeyAction::Select)) { delay(100); }
+        while (!check(EscPress) && !check(SelPress)) { delay(100); }
 
         return;
     }

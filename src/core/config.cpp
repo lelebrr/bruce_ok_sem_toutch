@@ -4,8 +4,8 @@
 #include <LittleFS.h>
 #include <globals.h>
 
-DynamicJsonDocument BruceConfig::toJson() const {
-    DynamicJsonDocument jsonDoc(4096);
+JsonDocument BruceConfig::toJson() const {
+    JsonDocument jsonDoc;
     JsonObject setting = jsonDoc.to<JsonObject>();
 
     setting["priColor"] = String(priColor, HEX);
@@ -75,9 +75,9 @@ DynamicJsonDocument BruceConfig::toJson() const {
     JsonArray dm = setting["disabledMenus"].to<JsonArray>();
     for (int i = 0; i < disabledMenus.size(); i++) { dm.add(disabledMenus[i]); }
 
-    JsonArray qrArray = setting.createNestedArray("qrCodes");
+    JsonArray qrArray = setting["qrCodes"].to<JsonArray>();
     for (const auto &entry : qrCodes) {
-        JsonObject qrEntry = qrArray.createNestedObject();
+        JsonObject qrEntry = qrArray.add<JsonObject>();
         qrEntry["menuName"] = entry.menuName;
         qrEntry["content"] = entry.content;
     }
@@ -110,7 +110,7 @@ void BruceConfig::fromFile(bool checkFS) {
     }
 
     // Deserialize the JSON document
-    DynamicJsonDocument jsonDoc(4096);
+    JsonDocument jsonDoc;
     if (deserializeJson(jsonDoc, file)) {
         Serial.println("Failed to read config file, using default configuration");
         return;
@@ -433,7 +433,7 @@ void BruceConfig::fromFile(bool checkFS) {
 
 void BruceConfig::saveFile() {
     FS *fs = &LittleFS;
-    DynamicJsonDocument jsonDoc = toJson();
+    JsonDocument jsonDoc = toJson();
 
     // Open file for writing
     File file = fs->open(filepath, FILE_WRITE);

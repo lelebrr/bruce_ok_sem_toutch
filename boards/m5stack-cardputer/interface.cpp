@@ -3,7 +3,6 @@
 #include <Keyboard.h>
 #include <Wire.h>
 #include <interface.h>
-#include "input_state.h"
 
 // Cardputer and 1.1 keyboard
 Keyboard_Class Keyboard;
@@ -164,7 +163,6 @@ void _setBrightness(uint8_t brightval) {
 ** Handles the variables PrevPress, NextPress, SelPress, AnyKeyPress and EscPress
 **********************************************************************/
 void InputHandler(void) {
-    auto& navState = InputManager::getInstance().state;
     static unsigned long tm = 0;
 
     static bool sel = false;
@@ -182,29 +180,28 @@ void InputHandler(void) {
     bool arrow_dw = false;
     bool arrow_ry = false;
     bool arrow_le = false;
-    if (millis() - tm < 200 && navState.last_action != KeyAction::LongPress) return;
+    if (millis() - tm < 200 && !LongPress) return;
 
     if (digitalRead(0) == LOW) { // GPIO0 button, shoulder button
         tm = millis();
         if (!wakeUpScreen()) yield();
         else return;
-        navState.last_action = KeyAction::Select;
-        navState.any_key_pressed = true;
+        SelPress = true;
+        AnyKeyPress = true;
     }
 
     if (UseTCA8418) {
         if (!kb_interrupt) {
-            if (navState.last_action != KeyAction::LongPress) {
+            if (!LongPress) {
                 sel = false; // avoid multiple selections
                 esc = false; // avoid multiple escapes
             }
-            if(next) navState.last_action = KeyAction::Next;
-            if(prev) navState.last_action = KeyAction::Prev;
-            if(up) navState.last_action = KeyAction::Up;
-            if(down) navState.last_action = KeyAction::Down;
-            if (sel) navState.last_action = KeyAction::Select;
-            if (esc) navState.last_action = KeyAction::Escape;
-
+            NextPress = next;
+            PrevPress = prev;
+            UpPress = up;
+            DownPress = down;
+            if (!SelPress) SelPress = sel;
+            EscPress = esc;
             if (del) {
                 KeyStroke.del = del;
                 KeyStroke.pressed = true;
@@ -234,7 +231,7 @@ void InputHandler(void) {
 
         if (wakeUpScreen()) return;
 
-        navState.any_key_pressed = true;
+        AnyKeyPress = true;
 
         if (handleSpecialKeys(row, col, pressed) > 0) return;
 
@@ -318,44 +315,42 @@ void InputHandler(void) {
             fn_key_pressed = false;
         }
         KeyStroke = key;
-
-        if(next) navState.last_action = KeyAction::Next;
-        if(prev) navState.last_action = KeyAction::Prev;
-        if(up) navState.last_action = KeyAction::Up;
-        if(down) navState.last_action = KeyAction::Down;
-        if(sel) navState.last_action = KeyAction::Select;
-        if(esc) navState.last_action = KeyAction::Escape;
-
+        NextPress = next;
+        PrevPress = prev;
+        UpPress = up;
+        DownPress = down;
+        SelPress = sel;
+        EscPress = esc;
         tm = millis();
     } else {
         Keyboard.update();
         if (Keyboard.isPressed()) {
             tm = millis();
-            if (!wakeUpScreen()) navState.any_key_pressed = true;
+            if (!wakeUpScreen()) AnyKeyPress = true;
             else return;
             keyStroke key;
             Keyboard_Class::KeysState status = Keyboard.keysState();
             for (auto i : status.hid_keys) key.hid_keys.emplace_back(i);
             for (auto i : status.word) {
-                if (i == '`' || i == KEY_BACKSPACE) navState.last_action = KeyAction::Escape;
+                if (i == '`' || i == KEY_BACKSPACE) EscPress = true;
 
                 if (i == ';') {
                     arrow_up = true;
-                    navState.last_action = KeyAction::Prev;
+                    PrevPress = true;
                 }
                 if (i == '.') {
                     arrow_dw = true;
-                    navState.last_action = KeyAction::Next;
+                    NextPress = true;
                 }
                 if (i == '/') {
                     arrow_ry = true;
-                    navState.last_action = KeyAction::Next;
-                    // NextPagePress = true;
+                    NextPress = true;
+                    NextPagePress = true;
                 }
                 if (i == ',') {
                     arrow_le = true;
-                    navState.last_action = KeyAction::Prev;
-                    // PrevPagePress = true;
+                    PrevPress = true;
+                    PrevPagePress = true;
                 }
                 if (status.fn && arrow_up) key.word.emplace_back(0xDA);
                 else if (status.fn && arrow_dw) key.word.emplace_back(0xD9);
@@ -376,7 +371,7 @@ void InputHandler(void) {
             if (status.enter) {
                 key.enter = true;
                 key.exit_key = true;
-                navState.last_action = KeyAction::Select;
+                SelPress = true;
             }
             if (status.fn) key.fn = true;
             if (key.fn && key.del) {

@@ -16,8 +16,8 @@
 #include <ArduinoJson.h>
 #include <ESP32Time.h>
 #include <FS.h>
-#include "LittleFS.h"
-extern fs::LittleFSFS LittleFS;
+#include <LittleFS.h>
+extern FS &LittleFS; // <-- DECLARAÇÃO CORRETA PARA LITTLEFS NATIVO
 #include <NTPClient.h>
 
 #include "core/config.h"
@@ -225,6 +225,7 @@ extern volatile int EncoderLedChange;
 
 extern void runClockLoop();
 extern TaskHandle_t xHandle;
+void InputHandler();
 
 // Declaration for BusConfig omitted since we changed to specific types
 // Declare stub functions from utils.h here
