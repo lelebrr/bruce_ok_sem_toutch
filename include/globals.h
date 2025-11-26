@@ -225,7 +225,6 @@ extern volatile int EncoderLedChange;
 
 extern void runClockLoop();
 extern TaskHandle_t xHandle;
-void InputHandler();
 
 // Declaration for BusConfig omitted since we changed to specific types
 // Declare stub functions from utils.h here

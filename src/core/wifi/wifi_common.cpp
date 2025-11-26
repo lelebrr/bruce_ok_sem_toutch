@@ -1,6 +1,5 @@
 #include "core/wifi/wifi_common.h"
 #include "core/display.h"    // using displayRedStripe  and loop options
-#include "core/display_functions.h"
 #include "core/mykeyboard.h" // usinf keyboard when calling rename
 #include "core/powerSave.h"
 #include "core/settings.h"
