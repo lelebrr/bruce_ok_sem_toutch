@@ -18,7 +18,6 @@
 #include "menu_items/RFMenu.h"
 #include "menu_items/ScriptsMenu.h"
 #include "menu_items/WifiMenu.h"
-#include "modules/camper_control/CamperControlMenu.h"
 
 class MainMenu {
 public:
@@ -36,7 +35,6 @@ public:
     RFMenu rfMenu;
     ScriptsMenu scriptsMenu;
     WifiMenu wifiMenu;
-    CamperControlMenu camperControlMenu;
 #if !defined(LITE_VERSION)
     EthernetMenu ethernetMenu;
 #endif

@@ -786,10 +786,9 @@ String loopSD(FS &fs, bool filePicker, String allowed_ext, String rootPath) {
                     redraw = true;
                 }
             }
-            else {
-                fileList.clear();
-                return result;
-            }
+            if (fileList[index].operation == true && Folder == "/") break; // exit if pressing back on root
+        }
+        if (check(EscPress)) {
         BACK_FOLDER:
             if (Folder == "/") break;
             Folder = Folder.substring(0, Folder.lastIndexOf('/'));

@@ -27,6 +27,7 @@ int loopOptions(
 
 // Additional missing functions
 void displayRedStripe(String msg);
+void displayTextLine(String msg);
 void displayScrollingText(String text, Opt_Coord &coord);
 void printTitle(String title);
 void padprintf(const char *format, ...);

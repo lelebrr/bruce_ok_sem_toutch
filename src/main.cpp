@@ -77,6 +77,12 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
+
+void InputHandler() {
+    // This function is intentionally left empty.
+    // It is a weak function that can be overridden by other parts of the codebase.
+}
+
 // Public Globals Variables
 unsigned long previousMillis = millis();
 int prog_handler; // 0 - Flash, 1 - LittleFS, 3 - Download
@@ -420,7 +426,6 @@ void setup() {
 #endif
     begin_storage();
     begin_tft();
-    mainMenu.camperControlMenu.begin(); // Inicializa o módulo do painel do campista
     init_clock();
     init_led();
 

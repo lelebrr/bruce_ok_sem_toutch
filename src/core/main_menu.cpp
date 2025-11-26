@@ -7,7 +7,6 @@
 MainMenu::MainMenu() {
     _menuItems = {
         &wifiMenu,
-        &camperControlMenu,
         &bleMenu,
 #if !defined(LITE_VERSION)
         &ethernetMenu,
