@@ -420,6 +420,7 @@ void setup() {
 #endif
     begin_storage();
     begin_tft();
+    mainMenu.camperControlMenu.begin(); // Inicializa o módulo do painel do campista
     init_clock();
     init_led();
 
