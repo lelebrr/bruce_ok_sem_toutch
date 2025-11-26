@@ -1,6 +1,7 @@
 // @IncursioHack
 #include "core/wifi/wifi_mac.h"
 #include "core/display.h"
+#include "core/display_functions.h"
 #include "core/mykeyboard.h"
 #include "core/utils.h"
 #include <esp_wifi.h>
@@ -72,18 +73,18 @@ void wifiMACMenu() {
     delay(1000);
 
     options.clear();
-    options.push_back({"Default MAC", []() {
+    options.push_back({"Default MAC", [=]() {
                            bruceConfig.wifiMAC = "";
                            bruceConfig.saveFile();
                            displayTextLine("Default MAC set");
                        }});
 
-    options.push_back({"Set MAC", []() {
+    options.push_back({"Set MAC", [=]() {
                            String newMAC = keyboard("", 17, "Enter MAC XX:YY:ZZ:AA:BB:CC");
                            if (setCustomMAC(newMAC)) { displayTextLine("MAC Saved: " + newMAC); }
                        }});
 
-    options.push_back({"Random MAC", []() {
+    options.push_back({"Random MAC", [=]() {
                            String randMAC = generateRandomMAC();
                            setCustomMAC(randMAC);
                            displayTextLine("Random MAC: " + randMAC);
