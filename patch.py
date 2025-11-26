@@ -148,14 +148,12 @@ def prepare_www_files():
 
                 header.write(f"const uint8_t {var_name}[] PROGMEM = {{\n")
 
+                # Write hex values, inserting a newline every 15 bytes
                 for i in range(0, len(compressed_data), 15):
-                    chunk = compressed_data[i:i + 15]
-                    hex_chunk = ", ".join(f"0x{byte:02X}" for byte in chunk)
-                    if i + 15 < len(compressed_data):
-                        header.write(f"  {hex_chunk},\n")
-                    else:
-                        header.write(f"  {hex_chunk}\n")
-
+                    hex_chunk = ", ".join(
+                        f"0x{byte:02X}" for byte in compressed_data[i : i + 15]
+                    )
+                    header.write(f"  {hex_chunk},\n")
 
                 header.write("};\n\n")
                 header.write(

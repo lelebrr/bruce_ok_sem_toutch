@@ -1,6 +1,5 @@
 #include "webInterface.h"
 #include "core/display.h"    // using displayRedStripe as error msg
-#include "core/display_functions.h"
 #include "core/mykeyboard.h" // using keyboard when calling rename
 #include "core/passwords.h"
 #include "core/sd_functions.h" // using sd functions called to rename and manage sd files
@@ -450,6 +449,7 @@ void configureWebServer() {
         if (request->hasArg("cmnd")) {
             String cmnd = request->arg("cmnd");
             if (serialCli.parse(cmnd)) {
+                // drawWebUiScreen(WiFi.getMode() == WIFI_MODE_AP ? true : false);
                 int sep = cmnd.indexOf(" ");
                 String firstParam = (sep >= 0) ? cmnd.substring(0, sep) : cmnd;
                 if (firstParam == "nav") {
