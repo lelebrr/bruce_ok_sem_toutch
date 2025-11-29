@@ -25,13 +25,15 @@ This is the board config. Look at other boards for whats needed.
 Here is an offical example and what we are actually using here:
 https://github.com/platformio/platform-espressif32/blob/master/boards/esp32-s3-devkitc-1.json
 
-PS.: "variant" field must point to "pinouts"
+PS.: Most boards use a shared `pinouts` variant:
 ```json
     ...
       "mcu": "esp32s3",
       "variant": "pinouts"
     ...
 ```
+Some boards, like `ESP32-3248S035R`, use a dedicated variant directory which must
+match the `"variant"` field (e.g. `"variant": "ESP32-3248S035R"`).
 
 ## boards/pinouts/pins_arduio.h
 This is where you will put the flag that will include your boards pinouts header, pointing to the \[board]/pins_arduino.h
