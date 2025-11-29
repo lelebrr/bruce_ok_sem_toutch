@@ -231,6 +231,12 @@ Also, [read our FAQ](https://github.com/pr3y/Bruce/wiki/FAQ)
 
 *LITE_VERSION*: TelNet, SSH, DPWO, WireGuard, ScanHosts, RawSniffer, Brucegotchi, BLEBacon, BLEScan, Interpreter and OpenHaystack are NOT available for M5Launcher Compatibility
 
+Additional documentation:
+
+- Board file layout and how to add new boards: see boards/README.md
+- Sunton ESP32-3248S035R (Cheap Yellow Display 3.5" resistive) specifics: see boards/ESP32-3248S035R/README.md
+- Portuguese (pt-BR) version of this README: see README_pt-BR.md
+
 
 ## :sparkles: Why and how does it look?
 

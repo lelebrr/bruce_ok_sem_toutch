@@ -33,7 +33,14 @@ PS.: Most boards use a shared `pinouts` variant:
     ...
 ```
 Some boards, like `ESP32-3248S035R`, use a dedicated variant directory which must
-match the `"variant"` field (e.g. `"variant": "ESP32-3248S035R"`).
+match the `"variant"` field (e.g. `"variant": "ESP32-3248S035R"`). For this board we also ship
+additional files inside `boards/ESP32-3248S035R` such as:
+
+- `User_Setup.h` (TFT_eSPI configuration for ST7796 + resistive touch)
+- `ESP32-3248S035R.ini` (PlatformIO environments for this device)
+- `README.md` (board-specific documentation: pinout, touch calibration, hints)
+
+See that directory for a complete, real-world example of a board with its own variant.
 
 ## boards/pinouts/pins_arduio.h
 This is where you will put the flag that will include your boards pinouts header, pointing to the \[board]/pins_arduino.h
