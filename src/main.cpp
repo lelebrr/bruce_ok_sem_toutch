@@ -78,9 +78,9 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
     }
 }
 
-void InputHandler() {
+void __attribute__((weak)) InputHandler() {
     // This function is intentionally left empty.
-    // It is a weak function that can be overridden by other parts of the codebase.
+    // Board-specific implementations can override this default handler.
 }
 
 // Public Globals Variables

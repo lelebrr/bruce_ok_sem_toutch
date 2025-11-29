@@ -4,10 +4,13 @@
       "ldscript": "esp32_out.ld"
     },
     "core": "esp32",
-    "extra_flags": "-DARDUINO_ESP32_DEV",
+    "extra_flags": [
+      "-DARDUINO_ESP32_DEV",
+      "-DESP32_3248S035R"
+    ],
     "f_cpu": "240000000L",
-    "f_flash": "80000000L",
-    "flash_mode": "qio",
+    "f_flash": "40000000L",
+    "flash_mode": "dio",
     "mcu": "esp32",
     "variant": "ESP32-3248S035R"
   },
@@ -22,6 +25,6 @@
     "require_upload_port": true,
     "speed": 460800
   },
-  "url": "https://www.espressif.com/",
+  "url": "https://www.espboards.dev/esp32/cyd-esp32-3248s035/",
   "vendor": "Sunton"
 }

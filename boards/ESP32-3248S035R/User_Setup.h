@@ -7,57 +7,45 @@
 
 #define USER_SETUP_ID 99
 
-// Define ST7796 Driver
+// Use ST7796 driver on HSPI bus
 #define ST7796_DRIVER
+#define USE_HSPI_PORT
 
-// Define screen resolution
-#define TFT_WIDTH 480
-#define TFT_HEIGHT 320
+// Native panel resolution (portrait)
+#define TFT_WIDTH 320
+#define TFT_HEIGHT 480
 
-// Define SPI frequency
-#define SPI_FREQUENCY 27000000
-
-// Define read frequency
-#define SPI_READ_FREQUENCY 20000000
-
-// Define touch frequency
+// SPI frequencies
+#define SPI_FREQUENCY       27000000
+#define SPI_READ_FREQUENCY  20000000
 #define SPI_TOUCH_FREQUENCY 2500000
 
-// Define pins
+// TFT control pins (Sunton / CYD ESP32-3248S035R)
 #define TFT_MISO 12
 #define TFT_MOSI 13
 #define TFT_SCLK 14
-#define TFT_CS 15
-#define TFT_DC 2
-#define TFT_RST -1
+#define TFT_CS   15
+#define TFT_DC   2
+#define TFT_RST  4
 
-// Define backlight pin
+// Backlight pin
 #define TFT_BL 27
 
-// Define touch pins
-#define TOUCH_CS 33
-
-// Define touch driver
+// Resistive touch (XPT2046 compatible)
+#define TOUCH_CS  33
+#define TOUCH_IRQ 36
 #define TOUCH_DRIVER 2046
 
-// Define touch interrupt pin
+// Optional interrupt pin used by some helper libraries
 #define TOUCH_CONFIG_INT_GPIO_NUM 36
 
-// Define rotation
-#define LOAD_GLCD  // Font 1. Original 8 pixel font needs ~1820 bytes in FLASH
-#define LOAD_FONT2 // Font 2. Small 16 pixel font needs ~3534 bytes in FLASH, needs ~1828 bytes in FLASH
-#define LOAD_FONT4 // Font 4. Medium 26 pixel font needs ~5848 bytes in FLASH
-#define LOAD_FONT6 // Font 6. Large 48 pixel font needs ~2666 bytes in FLASH, needs ~4548 bytes in FLASH
-#define LOAD_FONT7 // Font 7. 7 segment 48 font needs ~2438 bytes in FLASH
-#define LOAD_FONT8 // Font 8. Large 75 pixel font needs ~3256 bytes in FLASH
-#define LOAD_GFXFF // FreeFonts. Include access to the 48 Adafruit_GFX free fonts FF1 to FF48 and custom fonts
+// Fonts
+#define LOAD_GLCD   // Font 1. Original 8 pixel font
+#define LOAD_FONT2  // Small 16 pixel font
+#define LOAD_FONT4  // Medium 26 pixel font
+#define LOAD_FONT6  // Large 48 pixel font
+#define LOAD_FONT7  // 7 segment 48 font
+#define LOAD_FONT8  // Large 75 pixel font
+#define LOAD_GFXFF  // FreeFonts. Access to Adafruit_GFX free fonts
 
 #define SMOOTH_FONT
-
-// #define SPI_TOUCH_CONTROL 1
-
-// #define SPI_FREQUENCY  27000000
-// #define SPI_READ_FREQUENCY  20000000
-// #define SPI_TOUCH_FREQUENCY  2500000
-
-// #define SUPPORT_TRANSACTIONS
