@@ -394,10 +394,11 @@ o recomendado é:
 
 ### CC1101 / NRF24 / W5500
 
-- Compartilham o barramento VSPI.
+- Compartilham o barramento VSPI (18/19/23).
 - Use CS dedicados por módulo:
-  - Ex.: `CS_CC1101 = 25`, `CS_NRF24 = 26`, etc.
+  - Ex.: `CS_CC1101 = 25`, `CS_NRF24 = 26`, `CS_W5500 = 32`, etc.
 - Ajuste os `build_flags` ou a lógica de seleção de módulo no código para usar os novos pinos.
+- Mais detalhes e passo a passo de ligação com exemplos de uso estão na seção abaixo.
 
 ### I2C
 
@@ -445,6 +446,177 @@ Se o touch estiver impreciso ou “virado”:
 
 ---
 
+## Exemplo prático: ligando CC1101, NRF24 e W5500 na Sunton
+
+A seguir, um guia passo a passo para ligar e usar os principais módulos RF/Ethernet na Sunton:
+
+- CC1101 (Sub-GHz)
+- NRF24L01 (2.4 GHz)
+- W5500 (Ethernet)
+
+Todos compartilham o barramento VSPI (SCK=18, MISO=19, MOSI=23) da Sunton.
+
+### 1) Pinos base (VSPI da Sunton)
+
+- `SCK  = GPIO 18`
+- `MISO = GPIO 19`
+- `MOSI = GPIO 23`
+
+Esses pinos já são usados também pelo microSD. O truque é:
+
+- Compartilhar SCK/MISO/MOSI entre módulos.
+- Dar um CS dedicado para cada um.
+
+Recomendação de CS (podem ser ajustados):
+
+- `SDCARD_CS = 5` (já definido no `.ini`)
+- `CS_CC1101 = 25`
+- `CS_NRF24  = 26`
+- `CS_W5500  = 32`
+
+Sempre verifique se esses pinos estão realmente livres na sua versão da placa.
+
+### 2) Ligação física — CC1101
+
+Módulos CC1101 comuns (com header de 8 pinos) normalmente usam:
+
+- `MOSI` → `SI`
+- `MISO` → `SO`
+- `SCK`  → `SCK`
+- `CS`   → `CSN` ou `CS`
+- `GDO0`/`GDO2` → pinos de interrupção opcionais, usados para Rx/Tx pronto (podem ser ligados em pinos GPIO livres, se necessário).
+
+Sugestão na Sunton:
+
+- `SI` (MOSI CC1101) → GPIO 23
+- `SO` (MISO CC1101) → GPIO 19
+- `SCK` → GPIO 18
+- `CSN` → GPIO 25 (`CS_CC1101`)
+- `GDO0` → GPIO 34 (exemplo, se quiser usar IRQ)
+- `GND` → GND
+- `VCC` → 3V3
+
+No Bruce, o CC1101 é inicializado em `setup_gpio()` via `initCC1101once(...)`, usando a configuração de `bruceConfigPins.CC1101_bus`. Para a Sunton:
+
+- Certifique-se de que o mapeamento de pinos em `bruceConfigPins` foi configurado (via UI ou arquivo de config) para usar:
+  - `mosi = 23`
+  - `miso = 19`
+  - `sck  = 18`
+  - `ss   = 25` (ou o CS que você escolheu)
+
+Exemplo de uso no Bruce (já existente nos menus):
+
+- Menu RF → Config:
+  - Selecionar módulo CC1101.
+  - Ajustar frequência, TX/RX, etc.
+- Menu RF → Custom SubGhz / Replay:
+  - Carregar arquivos `.sub` / `.txt` compatíveis.
+
+Não é necessário escrever código extra: basta ligar o hardware nos pinos acima e configurar via menu.
+
+### 3) Ligação física — NRF24L01
+
+Módulos NRF24L01 com antena (PA+LNA) normalmente usam:
+
+- `MOSI` → `MOSI`
+- `MISO` → `MISO`
+- `SCK`  → `SCK`
+- `CSN`  → CS do SPI
+- `CE`   → pino de controle (GPIO dedicado)
+- `IRQ`  → opcional (interrupções)
+
+Sugestão na Sunton:
+
+- `MOSI` → GPIO 23
+- `MISO` → GPIO 19
+- `SCK`  → GPIO 18
+- `CSN`  → GPIO 26 (`CS_NRF24`)
+- `CE`   → GPIO 33 ou outro GPIO livre (se não estiver usando para outra função)
+- `IRQ`  → opcional (ex.: GPIO 34)
+- `VCC`  → 3V3 (NRF24L01 costuma ser sensível a ruído, use fonte estável)
+- `GND`  → GND
+
+No Bruce, há suporte integrado para NRF24:
+
+- Menu NRF24:
+  - Jammer
+  - 2.4G Spectrum
+  - (Futuro) Mousejack/Keyboardjacking.
+
+Para garantir que o Bruce use esses pinos:
+
+- Verifique em `bruceConfigPins` (via UI) o mapeamento do módulo NRF24:
+  - `mosi = 23`
+  - `miso = 19`
+  - `sck  = 18`
+  - `ss   = 26` (CSN)
+  - `ce   = 33` (por exemplo)
+
+Novamente, não há necessidade de código extra, apenas hardware e configuração.
+
+### 4) Ligação física — W5500 (Ethernet)
+
+Módulos W5500 usam basicamente SPI + alguns sinais adicionais:
+
+- `MOSI`
+- `MISO`
+- `SCK`
+- `CS`
+- `RST` (opcional)
+- `INT` (opcional)
+
+Sugestão na Sunton:
+
+- `MOSI` → GPIO 23
+- `MISO` → GPIO 19
+- `SCK`  → GPIO 18
+- `CS`   → GPIO 32 (`CS_W5500`)
+- `RST`  → pino GPIO livre ou ligado a 3V3 via resistor (conforme o módulo)
+- `INT`  → opcional (GPIO livre)
+- `VCC`  → 3V3
+- `GND`  → GND
+
+No momento, o Bruce não expõe um menu específico de W5500/Ethernet em todos os devices, então este mapeamento é mais para quem quer experimentar/estender:
+
+- Você pode criar scripts ou código customizado para usar o W5500, com base nos exemplos de bibliotecas Ethernet (WIZnet, etc.).
+- A vantagem é que a Sunton já expõe facilmente o barramento SPI e você pode compartilhar com SD/CC1101/NRF24.
+
+### 5) Exemplo concreto de configuração via código (para projetos customizados)
+
+Se você estiver criando um firmware derivado do Bruce e quiser fixar os pinos por código (em vez de só usar o menu), um padrão simples para CC1101/NRF24 seria:
+
+```cpp
+// Exemplo simplificado de configuração de pinos para uso com CC1101/NRF24 na Sunton
+// (para projetos baseados em Bruce, mas com código custom)
+
+#define CC1101_CS_PIN   25
+#define NRF24_CS_PIN    26
+#define NRF24_CE_PIN    33
+
+SPIClass vspi(VSPI);
+
+void setup_rf_buses() {
+    // VSPI base pins - já definidos no .ini, mas explicitando:
+    vspi.begin(18 /*SCK*/, 19 /*MISO*/, 23 /*MOSI*/, CC1101_CS_PIN);
+
+    pinMode(CC1101_CS_PIN, OUTPUT);
+    digitalWrite(CC1101_CS_PIN, HIGH); // deselecionado
+
+    pinMode(NRF24_CS_PIN, OUTPUT);
+    digitalWrite(NRF24_CS_PIN, HIGH);  // deselecionado
+
+    pinMode(NRF24_CE_PIN, OUTPUT);
+    digitalWrite(NRF24_CE_PIN, LOW);
+
+    // A partir daqui você inicializa as libs específicas (SmartRC-CC1101, RF24, etc.)
+    // usando &vspi e esses pinos de CS/CE.
+}
+```
+
+No Bruce “oficial”, essa lógica é abstraída pelo `bruceConfigPins` e pelas funções de inicialização já existentes (como `initCC1101once`), então em geral não é necessário mexer no código, apenas cabear corretamente e configurar via UI.
+
+---
+
 ## Resumo rápido para começar
 
 1. Instale o PlatformIO (VSCode ou CLI).
@@ -457,6 +629,7 @@ Se o touch estiver impreciso ou “virado”:
 
 4. Aguarde o boot e siga a calibração do touch na tela.
 5. Após a calibração, o touch estará integrado com a UI do Bruce e com o teclado on-screen.
-6. Use o WebUI e o gerenciamento de arquivos para explorar as demais features.
+6. (Opcional) Conecte CC1101, NRF24 ou W5500 ao barramento VSPI conforme as sugestões acima e configure os pinos via menus de Config/Hardware.
+7. Use o WebUI e o gerenciamento de arquivos para explorar as demais features.
 
 Se surgir qualquer erro de compilação, linkagem ou comportamento estranho, compartilhe os logs: com eles é possível ajustar finamente macros, pinos, frequências de SPI e outras configurações para tirar o máximo proveito desta placa.
