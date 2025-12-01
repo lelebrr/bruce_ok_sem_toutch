@@ -89,6 +89,27 @@ Para detalhes completos (pinout, arquivos da placa, integração com CC1101/NRF2
 
 - `boards/ESP32-3248S035R/README.md` (documentação específica da placa)
 
+### Tabela rápida de pinos (Sunton ↔ CC1101 / NRF24 / W5500)
+
+Para facilitar a ligação de módulos externos na Sunton ESP32-3248S035R, use esta tabela como referência rápida:
+
+| Função                     | Pino Sunton | CC1101           | NRF24L01           | W5500             |
+|----------------------------|------------:|------------------|--------------------|-------------------|
+| SPI SCK (VSPI)             | GPIO 18     | SCK              | SCK                | SCK               |
+| SPI MISO (VSPI)            | GPIO 19     | SO / MISO        | MISO               | MISO              |
+| SPI MOSI (VSPI)            | GPIO 23     | SI / MOSI        | MOSI               | MOSI              |
+| CS do cartão microSD       | GPIO 5      | –                | –                  | –                 |
+| CS sugerido para CC1101    | GPIO 25     | CS / CSN         | –                  | –                 |
+| CS sugerido para NRF24     | GPIO 26     | –                | CSN                | –                 |
+| CS sugerido para W5500     | GPIO 32     | –                | –                  | CS                |
+| CE sugerido para NRF24     | GPIO 33     | –                | CE                 | –                 |
+| IRQ (opcional, qualquer)   | GPIO 34*    | GDO0 / GDO2      | IRQ                | INT               |
+| Alimentação módulos        | 3V3 / GND   | VCC / GND        | VCC / GND          | VCC / GND         |
+
+- GPIO 34 é apenas um exemplo de pino para interrupções; você pode usar outro GPIO livre se preferir.
+- Todos os módulos compartilham o mesmo barramento SPI (18/19/23); o que muda é o pino de CS (e CE/IRQ, quando aplicável).
+- Depois de ligar o hardware, configure os pinos em `Config` → `Hardware` (ou menus equivalentes) dentro do Bruce, usando os mesmos valores da tabela.
+
 ## :keyboard: Servidor Discord
 
 Entre em contato com a comunidade no [servidor oficial do Discord](https://discord.gg/WJ9XF9czVT).
