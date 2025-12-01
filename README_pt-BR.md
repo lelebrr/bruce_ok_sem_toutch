@@ -110,6 +110,62 @@ Para facilitar a ligação de módulos externos na Sunton ESP32-3248S035R, use e
 - Todos os módulos compartilham o mesmo barramento SPI (18/19/23); o que muda é o pino de CS (e CE/IRQ, quando aplicável).
 - Depois de ligar o hardware, configure os pinos em `Config` → `Hardware` (ou menus equivalentes) dentro do Bruce, usando os mesmos valores da tabela.
 
+### Passo a passo rápido: CC1101 / NRF24 na Sunton
+
+Para quem só quer “ligar e usar” com o mínimo de dor de cabeça, siga estes passos:
+
+1. Cabeamento físico
+   - CC1101:
+     - SI (MOSI) → GPIO 23
+     - SO (MISO) → GPIO 19
+     - SCK      → GPIO 18
+     - CS / CSN → GPIO 25
+     - GND      → GND
+     - VCC      → 3V3
+   - NRF24:
+     - MOSI → GPIO 23
+     - MISO → GPIO 19
+     - SCK  → GPIO 18
+     - CSN  → GPIO 26
+     - CE   → GPIO 33
+     - GND  → GND
+     - VCC  → 3V3 (use fonte estável, NRF24 é sensível a ruído)
+
+2. Compilar e gravar o Bruce
+   ```bash
+   pio run -e ESP32-3248S035R-resistive -t upload
+   ```
+
+3. Configurar os pinos no Bruce
+   - Na Sunton, após o boot:
+     - Vá em `Config` → `Hardware` (ou menu equivalente de pinos).
+     - Em CC1101:
+       - Defina MOSI = 23, MISO = 19, SCK = 18, CS/SS = 25.
+     - Em NRF24:
+       - Defina MOSI = 23, MISO = 19, SCK = 18, CSN/SS = 26, CE = 33.
+     - Salve as configurações.
+
+4. Teste rápido com CC1101
+   - Entre no menu `RF` → `Config`:
+     - Selecione o módulo CC1101.
+     - Ajuste a frequência (por exemplo, 433.92 MHz, 315 MHz, etc.).
+   - Depois vá em:
+     - `RF` → `Spectrum` para ver o espectro em tempo real.
+     - `RF` → `Custom SubGhz` / `Replay` para reproduzir sinais salvos (arquivos `.sub`, etc.).
+   - Se o cabeamento e os pinos estiverem corretos, você verá atividade no espectro e conseguirá enviar/reproduzir sinais.
+
+5. Teste rápido com NRF24
+   - Entre no menu `NRF24`:
+     - Selecione `NRF24 Jammer` para gerar tráfego/jamming na banda de 2.4 GHz.
+     - Ou `2.4G Spectrum` para visualizar o espectro.
+   - Com outro dispositivo NRF24, você também pode testar comunicação mais avançada (dependendo das ferramentas disponíveis).
+
+Se algo não funcionar (sem sinal, nada no espectro, etc.), verifique primeiro:
+
+- Cabeamento (especialmente VCC e GND).
+- Valores de MOSI/MISO/SCK/CS/CE configurados nos menus.
+- Qualidade da alimentação (NRF24, principalmente, costuma precisar de capacitor próximo ao módulo).
+
 ## :keyboard: Servidor Discord
 
 Entre em contato com a comunidade no [servidor oficial do Discord](https://discord.gg/WJ9XF9czVT).
